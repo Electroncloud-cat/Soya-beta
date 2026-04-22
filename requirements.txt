@@ -1,0 +1,7 @@
+flask
+requests
+pymupdf
+pdfplumber
+ebooklib
+psutil
+mss

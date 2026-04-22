@@ -1,0 +1,31 @@
+{
+  "api_base": "https://xg.dianhuomao.shop/v1",
+  "api_key": "sk-guHywP3FbaFFcEvhM6BpemB5zfvx2vabxWg7Mp3OhYN4J3i8",
+  "model": "【J-A】claude-sonnet-4-6（按量）",
+  "models": [
+    "【🐻–Z】claude-sonnet-4-6-thinking（按量）",
+    "【🐻-A】gemini-3-pro-preview（6）",
+    "【J-A】claude-sonnet-4-6（按量）"
+  ],
+  "user_name": "初惠夏",
+  "user_desc": "",
+  "user_avatar": "",
+  "ai_avatar": "",
+  "live2d_enabled": false,
+  "live2d_eye_tracking": false,
+  "live2d_breathing": false,
+  "live2d_ai_control": false,
+  "live2d_model_path": "",
+  "summary_prompt": "请用简洁的第三人称总结以上对话的主要内容、情感变化和关键信息，控制在200字以内。",
+  "summary_keep_recent": 10,
+  "context_rounds": 30,
+  "proactive_require_page_visible": false,
+  "proactive_interval_minutes": 1,
+  "proactive_idle_minutes": 1,
+  "char_name": "",
+  "char_basic_info": "",
+  "char_personality": "",
+  "char_speech_style": "",
+  "char_background": "",
+  "char_examples": ""
+}
