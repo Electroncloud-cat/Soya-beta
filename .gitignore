@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 禁止上传所有 JSON 记忆文件
 *.json
 
@@ -11,4 +12,19 @@ Thumbs.db
 
 # 编辑器配置
 .vscode/
+=======
+# 禁止上传所有 JSON 记忆文件
+*.json
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 编辑器配置
+.vscode/
+>>>>>>> 2431efc5ce36822ce895a311c87aa199b938e11f
 .idea/

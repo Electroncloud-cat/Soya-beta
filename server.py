@@ -266,6 +266,7 @@ def post_settings():
     save_settings_file(s)
     return jsonify({"ok": True})
 
+
 # ─────────────────────────────────────────
 #  Emotion
 # ─────────────────────────────────────────
@@ -287,6 +288,7 @@ def set_emotion():
                 state['coefficients'][k] = v
     save_state(state)
     return jsonify({'ok': True})
+
 
 @app.route('/api/proactive-reset', methods=['POST'])
 def proactive_reset():
