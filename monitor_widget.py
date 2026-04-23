@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-涟宗也 · 活动监控悬浮窗  v2
+涟宗也 · 活动监控悬浮窗  v3
 颜色含义：
   🟢 绿色 — 正在聊天页面，鼠标活跃
   🟡 黄色 — 鼠标无动作超过5分钟（可能离开了）
@@ -13,17 +13,45 @@
   - 拖动窗口移动
   - 双击收缩 / 再次双击展开
   - 右上角 ✕ 关闭
+
+服务器地址配置：
+  优先级：命令行参数 > 环境变量 SOYA_SERVER > widget_config.json > 默认 localhost
+  示例（Windows远程连接Zero3W）：
+    python monitor_widget.py https://你的tunnel地址.trycloudflare.com
+    或设置环境变量 SOYA_SERVER=https://你的tunnel地址.trycloudflare.com
 """
 
 import tkinter as tk
-import json, threading
+import json, threading, sys, os
 
 try:
     import urllib.request as urlreq
 except ImportError:
     urlreq = None
 
-SERVER           = 'http://localhost:5000'
+# ── 服务器地址解析（支持本地/远程/Cloudflare Tunnel）──────────────────────
+def _resolve_server() -> str:
+    # 1. 命令行参数
+    if len(sys.argv) > 1 and sys.argv[1].startswith('http'):
+        return sys.argv[1].rstrip('/')
+    # 2. 环境变量
+    env = os.environ.get('SOYA_SERVER', '').strip()
+    if env:
+        return env.rstrip('/')
+    # 3. 同目录下的 widget_config.json
+    cfg_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'widget_config.json')
+    if os.path.exists(cfg_path):
+        try:
+            with open(cfg_path, 'r', encoding='utf-8') as f:
+                cfg = json.load(f)
+            if cfg.get('server'):
+                return cfg['server'].rstrip('/')
+        except Exception:
+            pass
+    # 4. 默认本机
+    return 'http://localhost:5000'
+
+SERVER           = _resolve_server()
 POLL_MS          = 2000
 MAX_FAILURES     = 4
 ALPHA_HOVER      = 0.95
@@ -80,7 +108,9 @@ class FloatingMonitor:
 
         tk.Label(title_row, text='涟宗也', bg=C_PANEL, fg=C_TITLE,
                  font=('微软雅黑', 8, 'bold')).pack(side='left')
-        tk.Label(title_row, text=' 监控', bg=C_PANEL, fg=C_DIM,
+        # 显示连接目标（本机显示"本机"，远程显示域名/IP）
+        _srv_label = '本机' if 'localhost' in SERVER or '127.0.0.1' in SERVER else SERVER.replace('https://','').replace('http://','')[:28]
+        tk.Label(title_row, text=f' 监控 · {_srv_label}', bg=C_PANEL, fg=C_DIM,
                  font=('微软雅黑', 7)).pack(side='left')
 
         self._close_btn = tk.Label(title_row, text='✕', bg=C_PANEL, fg=C_DIM,

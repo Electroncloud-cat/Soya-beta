@@ -265,12 +265,117 @@ def post_settings():
     save_settings_file(s)
     return jsonify({"ok": True})
 
+
 @app.route('/api/proactive-reset', methods=['POST'])
 def proactive_reset():
     """Reset the proactive message cooldown so the next loop check can fire immediately."""
     global _last_proactive_time
     _last_proactive_time = 0.0
     return jsonify({"ok": True})
+
+# ─────────────────────────────────────────
+# test
+# ─────────────────────────────────────────
+@app.route('/api/proactive-test', methods=['POST'])
+def proactive_test():
+    """立即强制触发一条主动消息（绕过所有冷却/空闲检查，仅用于测试）。"""
+    global _last_proactive_time
+
+    s = load_settings()
+    api_base = s.get('api_base', '').rstrip('/')
+    api_key  = s.get('api_key', '')
+    model    = s.get('model', '')
+    if not api_base or not api_key:
+        return jsonify({"error": "请先在设置里填写 API 地址和密钥"}), 400
+
+    with _sse_lock:
+        if not _sse_clients:
+            return jsonify({"error": "没有已连接的 SSE 客户端，请确认聊天页面已打开且 SSE 状态为「已连接」"}), 400
+
+    try:
+        from config import build_character_card
+        user_name = s.get('user_name', '初惠夏')
+        user_desc = s.get('user_desc', '')
+        now       = datetime.datetime.now()
+        hour      = now.hour
+
+        if   5 <= hour <  9: time_ctx = '清晨'
+        elif 9 <= hour < 12: time_ctx = '上午'
+        elif 12 <= hour < 14: time_ctx = '中午'
+        elif 14 <= hour < 18: time_ctx = '下午'
+        elif 18 <= hour < 21: time_ctx = '傍晚'
+        elif 21 <= hour < 24: time_ctx = '晚上'
+        else:                  time_ctx = '深夜'
+
+        system = build_character_card(s)
+        system += f"\n\n【用户信息】\n- 用户名字：{user_name}\n"
+        if user_desc:
+            system += f"- 用户描述：{user_desc}\n"
+        system += f"\n【涟宗也的记忆】\n{get_memory_summary()}\n"
+        system += f"\n当前时间：{now.strftime('%Y-%m-%d %H:%M')}（{time_ctx}）"
+        system += (
+            f"\n\n【当前情境】\n"
+            f"请以涟宗也的角色主动打招呼——可以问对方在做什么、是不是睡着了、或者随口说一句话。"
+            f"风格要符合角色设定：简短、平静、冷淡中带一点关心，不要热情，不要感叹号。"
+            f"回复最后一行必须附上动作指令。"
+        )
+
+        hist = load_history()
+        msgs = hist.get('messages', [])
+        recent = msgs[-6:] if len(msgs) >= 6 else msgs
+        api_msgs = [{'role': 'system', 'content': system}]
+        for m in recent:
+            if isinstance(m.get('content'), str):
+                api_msgs.append({'role': m['role'], 'content': m['content']})
+
+        r = req.post(
+            f"{api_base}/chat/completions",
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            json={"model": model, "max_tokens": 200, "temperature": 0.9,
+                  "messages": api_msgs},
+            timeout=300
+        )
+        r.raise_for_status()
+        raw = r.json()['choices'][0]['message']['content'] or ''
+
+        motion = 'idle'; expr = 'neutral'; clean = []
+        for line in raw.strip().split('\n'):
+            if '[MOTION:' in line or '[EXPR:' in line:
+                m2 = re.search(r'\[MOTION:(\w+)\]', line)
+                e2 = re.search(r'\[EXPR:(\w+)\]', line)
+                if m2: motion = m2.group(1)
+                if e2: expr   = e2.group(1)
+            else:
+                clean.append(line)
+        content = '\n'.join(clean).strip()
+        if not content:
+            return jsonify({"error": "AI 返回了空内容"}), 500
+
+        push_sse_event('proactive_message', {
+            'content': content,
+            'motion':  motion,
+            'expr':    expr,
+            'time':    now.strftime('%H:%M'),
+            'ts':      int(now.timestamp() * 1000)
+        })
+
+        hist_data = load_history()
+        hist_data.setdefault('messages', []).append({
+            'role':      'assistant',
+            'content':   content,
+            'time':      now.strftime('%H:%M'),
+            'ts':        int(now.timestamp() * 1000),
+            'proactive': True
+        })
+        hist_data['last_seen'] = now.isoformat()
+        save_history_file(hist_data)
+
+        _last_proactive_time = time.time()
+        return jsonify({"ok": True, "content": content})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+
 
 # ─────────────────────────────────────────
 #  Avatar
