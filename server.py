@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, send_from_directory, Response, stream
 import requests as req
 import json, os, datetime, base64, re, time, queue, threading
 from memory import get_memory_summary, save_memory as mem_save, load_all as mem_load_all, delete_memory as mem_delete
+from emotion import load_state, save_state
 
 app = Flask(__name__)
 
@@ -265,6 +266,27 @@ def post_settings():
     save_settings_file(s)
     return jsonify({"ok": True})
 
+# ─────────────────────────────────────────
+#  Emotion
+# ─────────────────────────────────────────
+@app.route('/api/emotion', methods=['GET'])
+def get_emotion():
+    return jsonify(load_state())
+
+@app.route('/api/emotion', methods=['POST'])
+def set_emotion():
+    body = request.get_json(force=True) or {}
+    state = load_state()
+    if 'values' in body:
+        for k, v in body['values'].items():
+            if k in state['values']:
+                state['values'][k] = v
+    if 'coefficients' in body:
+        for k, v in body['coefficients'].items():
+            if k in state['coefficients']:
+                state['coefficients'][k] = v
+    save_state(state)
+    return jsonify({'ok': True})
 
 @app.route('/api/proactive-reset', methods=['POST'])
 def proactive_reset():
