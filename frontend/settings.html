@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>设置 - 涟宗也</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    :root {
+      --bg: #1a1a2e;
+      --bg2: #16213e;
+      --bg3: #0f1419;
+      --text: #e0e0e0;
+      --text2: #a0a0a0;
+      --text3: #707070;
+      --accent: #7eb8d4;
+      --accent2: #a89fc8;
+      --border: #2a2a3e;
+      --danger: #cc4477;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, var(--bg) 0%, var(--bg2) 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+    }
+    .header h1 {
+      font-size: 28px;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .back-btn {
+      padding: 10px 20px;
+      background: rgba(126, 184, 212, 0.15);
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s;
+      font-size: 14px;
+    }
+    .back-btn:hover {
+      background: rgba(126, 184, 212, 0.25);
+      transform: translateX(-4px);
+    }
+    .section {
+      background: rgba(36, 36, 36, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      backdrop-filter: blur(10px);
+    }
+    .section-title {
+      font-size: 18px;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-desc {
+      font-size: 13px;
+      color: var(--text2);
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-label {
+      display: block;
+      font-size: 13px;
+      color: var(--text2);
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    .form-input, .form-select {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: rgba(126, 184, 212, 0.05);
+    }
+    .form-hint {
+      font-size: 12px;
+      color: var(--text3);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+    }
+    .toggle-label {
+      font-size: 14px;
+      color: var(--text2);
+    }
+    .toggle {
+      position: relative;
+      width: 48px;
+      height: 26px;
+    }
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      transition: 0.3s;
+      border-radius: 26px;
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background: var(--text3);
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+    .toggle input:checked + .toggle-slider {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .toggle input:checked + .toggle-slider:before {
+      transform: translateX(22px);
+      background: white;
+    }
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: 500;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #6aa8c4;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(126, 184, 212, 0.3);
+    }
+    .btn-secondary {
+      background: rgba(168, 159, 200, 0.2);
+      color: var(--accent2);
+      border: 1px solid var(--accent2);
+    }
+    .btn-secondary:hover {
+      background: rgba(168, 159, 200, 0.3);
+    }
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 20px 0;
+    }
+    .collapsible {
+      margin-top: 16px;
+    }
+    .collapsible-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: rgba(126, 184, 212, 0.1);
+      border: 1px solid rgba(126, 184, 212, 0.2);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .collapsible-header:hover {
+      background: rgba(126, 184, 212, 0.15);
+    }
+    .collapsible-content {
+      display: none;
+      padding: 16px;
+      margin-top: 8px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+    }
+    .collapsible-content.active {
+      display: block;
+    }
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 16px 24px;
+      background: var(--accent);
+      color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      opacity: 0;
+      transform: translateY(-20px);
+      transition: all 0.3s;
+      z-index: 1000;
+    }
+    .notification.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .notification.error {
+      background: var(--danger);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>⚙️ 设置</h1>
+      <a href="/" class="back-btn">← 返回主页</a>
+    </div>
+
+    <!-- API 配置 -->
+    <div class="section">
+      <div class="section-title">🔑 API 配置</div>
+      <div class="section-desc">配置 AI 模型的 API 地址和密钥</div>
+      <div class="form-group">
+        <label class="form-label">API 地址</label>
+        <input type="text" class="form-input" id="api-base" placeholder="https://api.xxx.com/v1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">API 密钥</label>
+        <input type="password" class="form-input" id="api-key" placeholder="sk-...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">当前模型</label>
+        <input type="text" class="form-input" id="model" placeholder="claude-sonnet-4-20250514">
+      </div>
+    </div>
+
+    <!-- 用户信息 -->
+    <div class="section">
+      <div class="section-title">👤 用户信息</div>
+      <div class="section-desc">设置你的个人信息</div>
+      <div class="form-group">
+        <label class="form-label">用户名</label>
+        <input type="text" class="form-input" id="user-name" placeholder="初惠夏">
+      </div>
+      <div class="form-group">
+        <label class="form-label">用户描述（可选）</label>
+        <textarea class="form-input" id="user-desc" rows="3" placeholder="例如：喜欢猫、学生、夜猫子…"></textarea>
+      </div>
+    </div>
+
+    <!-- 记忆与情感系统 -->
+    <div class="section">
+      <div class="section-title">🧠 记忆与情感系统</div>
+      <div class="section-desc">配置记忆引擎和情感系统</div>
+
+      <div class="form-group">
+        <label class="form-label">记忆引擎</label>
+        <select class="form-select" id="memory-engine" onchange="toggleOmbreSettings()">
+          <option value="simple">简单模式</option>
+          <option value="ombre">Ombre-Brain（高级）</option>
+        </select>
+        <p class="form-hint">Ombre-Brain 支持情感向量、遗忘曲线、语义搜索等高级功能</p>
+      </div>
+
+      <div class="collapsible" id="ombre-settings">
+        <div class="collapsible-header" onclick="toggleCollapsible('ombre-content')">
+          <span>Ombre-Brain 配置</span>
+          <span id="ombre-arrow">▼</span>
+        </div>
+        <div class="collapsible-content" id="ombre-content">
+          <div class="form-group">
+            <label class="form-label">记忆桶目录</label>
+            <input type="text" class="form-input" id="ombre-buckets-dir" placeholder="./ombre_buckets">
+          </div>
+          <div class="form-group">
+            <label class="form-label">向量数据库路径</label>
+            <input type="text" class="form-input" id="ombre-vector-db" placeholder="./ombre_buckets/vectors.db">
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">启用记忆衰减</span>
+            <label class="toggle">
+              <input type="checkbox" id="ombre-decay-enabled" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="form-group">
+        <label class="form-label">情感系统</label>
+        <select class="form-select" id="emotion-system">
+          <option value="occ">OCC 认知评价模型（推荐）</option>
+          <option value="simple">简单模式</option>
+        </select>
+        <p class="form-hint">OCC 模型：AI 对事件进行认知评价，自然产生情绪</p>
+      </div>
+    </div>
+
+    <!-- 对话设置 -->
+    <div class="section">
+      <div class="section-title">💭 对话设置</div>
+      <div class="section-desc">配置对话历史和上下文</div>
+
+      <div class="form-group">
+        <label class="form-label">上下文轮数</label>
+        <input type="number" class="form-input" id="context-rounds" min="5" max="50" value="20">
+        <p class="form-hint">每轮 = 1条用户消息 + 1条AI回复。建议 10~30</p>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">压缩后保留消息数</label>
+        <input type="number" class="form-input" id="keep-recent" min="4" max="50" value="10">
+      </div>
+
+      <div class="toggle-row">
+        <span class="toggle-label">桌面通知</span>
+        <label class="toggle">
+          <input type="checkbox" id="desktop-notif">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- 主动消息 -->
+    <div class="section">
+      <div class="section-title">💬 主动消息</div>
+      <div class="section-desc">涟宗也会在你长时间未发消息时主动打招呼</div>
+
+      <div class="form-group">
+        <label class="form-label">检查间隔（分钟）</label>
+        <input type="number" class="form-input" id="proactive-interval" min="5" max="120" value="20">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">空闲时长（分钟）</label>
+        <input type="number" class="form-input" id="proactive-idle" min="5" max="120" value="15">
+      </div>
+
+      <div class="toggle-row">
+        <span class="toggle-label">要求页面可见</span>
+        <label class="toggle">
+          <input type="checkbox" id="proactive-visible" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Live2D -->
+    <div class="section">
+      <div class="section-title">🎨 Live2D 模型</div>
+      <div class="section-desc">加载 Live2D 模型，让涟宗也拥有动态形象</div>
+
+      <div class="toggle-row">
+        <span class="toggle-label">启用 Live2D</span>
+        <label class="toggle">
+          <input type="checkbox" id="live2d-enabled" onchange="toggleLive2DSettings()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div id="live2d-extra" style="opacity: 0.4; pointer-events: none;">
+        <div class="form-group">
+          <label class="form-label">模型路径</label>
+          <input type="text" class="form-input" id="live2d-path" placeholder="live2d/model.model3.json">
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-label">眼部追踪</span>
+          <label class="toggle">
+            <input type="checkbox" id="live2d-eye" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-label">呼吸动画</span>
+          <label class="toggle">
+            <input type="checkbox" id="live2d-breath" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 保存按钮 -->
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="saveSettings()">💾 保存设置</button>
+      <button class="btn btn-secondary" onclick="location.href='/'">取消</button>
+    </div>
+  </div>
+
+  <div class="notification" id="notification"></div>
+
+  <script>
+    let settings = {};
+
+    async function loadSettings() {
+      try {
+        const r = await fetch('/api/settings');
+        if (!r.ok) throw new Error('加载失败');
+        settings = await r.json();
+
+        // 填充表单
+        document.getElementById('api-base').value = settings.api_base || '';
+        document.getElementById('api-key').value = settings.api_key || '';
+        document.getElementById('model').value = settings.model || '';
+        document.getElementById('user-name').value = settings.user_name || '初惠夏';
+        document.getElementById('user-desc').value = settings.user_desc || '';
+        document.getElementById('memory-engine').value = settings.memory_engine || 'simple';
+        document.getElementById('ombre-buckets-dir').value = settings.ombre_buckets_dir || './ombre_buckets';
+        document.getElementById('ombre-vector-db').value = settings.ombre_vector_db || './ombre_buckets/vectors.db';
+        document.getElementById('ombre-decay-enabled').checked = settings.ombre_decay_enabled !== false;
+        document.getElementById('emotion-system').value = settings.emotion_system || 'occ';
+        document.getElementById('context-rounds').value = settings.context_rounds || 20;
+        document.getElementById('keep-recent').value = settings.summary_keep_recent || 10;
+        document.getElementById('desktop-notif').checked = settings.desktop_notif_enabled || false;
+        document.getElementById('proactive-interval').value = settings.proactive_interval_minutes || 20;
+        document.getElementById('proactive-idle').value = settings.proactive_idle_minutes || 15;
+        document.getElementById('proactive-visible').checked = settings.proactive_require_page_visible !== false;
+        document.getElementById('live2d-enabled').checked = settings.live2d_enabled || false;
+        document.getElementById('live2d-path').value = settings.live2d_model_path || '';
+        document.getElementById('live2d-eye').checked = settings.live2d_eye_tracking !== false;
+        document.getElementById('live2d-breath').checked = settings.live2d_breathing !== false;
+
+        toggleOmbreSettings();
+        toggleLive2DSettings();
+      } catch (e) {
+        notify('加载设置失败', true);
+      }
+    }
+
+    async function saveSettings() {
+      const updated = {
+        api_base: document.getElementById('api-base').value,
+        api_key: document.getElementById('api-key').value,
+        model: document.getElementById('model').value,
+        models: settings.models || [],
+        user_name: document.getElementById('user-name').value,
+        user_desc: document.getElementById('user-desc').value,
+        memory_engine: document.getElementById('memory-engine').value,
+        ombre_buckets_dir: document.getElementById('ombre-buckets-dir').value,
+        ombre_vector_db: document.getElementById('ombre-vector-db').value,
+        ombre_decay_enabled: document.getElementById('ombre-decay-enabled').checked,
+        ombre_decay_interval: settings.ombre_decay_interval || 24,
+        ombre_archive_threshold: settings.ombre_archive_threshold || 0.3,
+        emotion_system: document.getElementById('emotion-system').value,
+        context_rounds: parseInt(document.getElementById('context-rounds').value) || 20,
+        summary_keep_recent: parseInt(document.getElementById('keep-recent').value) || 10,
+        summary_prompt: settings.summary_prompt || '',
+        desktop_notif_enabled: document.getElementById('desktop-notif').checked,
+        proactive_interval_minutes: parseInt(document.getElementById('proactive-interval').value) || 20,
+        proactive_idle_minutes: parseInt(document.getElementById('proactive-idle').value) || 15,
+        proactive_require_page_visible: document.getElementById('proactive-visible').checked,
+        proactive_prompt: settings.proactive_prompt || '',
+        live2d_enabled: document.getElementById('live2d-enabled').checked,
+        live2d_model_path: document.getElementById('live2d-path').value,
+        live2d_eye_tracking: document.getElementById('live2d-eye').checked,
+        live2d_breathing: document.getElementById('live2d-breath').checked,
+        live2d_ai_control: settings.live2d_ai_control !== false,
+        user_avatar: settings.user_avatar || '',
+        ai_avatar: settings.ai_avatar || '',
+        analysis_threshold: settings.analysis_threshold || 8000,
+        char_name: settings.char_name || '',
+        char_basic_info: settings.char_basic_info || '',
+        char_personality: settings.char_personality || '',
+        char_speech_style: settings.char_speech_style || '',
+        char_background: settings.char_background || '',
+        char_examples: settings.char_examples || ''
+      };
+
+      try {
+        const r = await fetch('/api/settings', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(updated)
+        });
+        if (!r.ok) throw new Error('保存失败');
+
+        settings = updated;
+        notify('设置已保存');
+
+        // 重置主动消息冷却期
+        await fetch('/api/proactive-reset', {method: 'POST'});
+      } catch (e) {
+        notify('保存失败', true);
+      }
+    }
+
+    function toggleOmbreSettings() {
+      const engine = document.getElementById('memory-engine').value;
+      const ombreSettings = document.getElementById('ombre-settings');
+      ombreSettings.style.display = engine === 'ombre' ? 'block' : 'none';
+    }
+
+    function toggleLive2DSettings() {
+      const enabled = document.getElementById('live2d-enabled').checked;
+      const extra = document.getElementById('live2d-extra');
+      extra.style.opacity = enabled ? '1' : '0.4';
+      extra.style.pointerEvents = enabled ? 'auto' : 'none';
+    }
+
+    function toggleCollapsible(id) {
+      const content = document.getElementById(id);
+      const arrow = document.getElementById(id.replace('-content', '-arrow'));
+      content.classList.toggle('active');
+      arrow.textContent = content.classList.contains('active') ? '▲' : '▼';
+    }
+
+    function notify(message, isError = false) {
+      const notif = document.getElementById('notification');
+      notif.textContent = message;
+      notif.className = 'notification show' + (isError ? ' error' : '');
+      setTimeout(() => {
+        notif.classList.remove('show');
+      }, 3000);
+    }
+
+    // 页面加载时加载设置
+    loadSettings();
+  </script>
+</body>
+</html>
