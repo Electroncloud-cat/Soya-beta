@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>帮助文档 - 涟宗也</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #e0e0e0;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: rgba(36, 36, 36, 0.95);
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      backdrop-filter: blur(10px);
+    }
+    h1 {
+      color: #7eb8d4;
+      margin-bottom: 8px;
+      font-size: 28px;
+      font-weight: 600;
+    }
+    .subtitle {
+      color: #999;
+      margin-bottom: 32px;
+      font-size: 14px;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      border-bottom: 2px solid #333;
+      padding-bottom: 0;
+    }
+    .tab {
+      padding: 12px 24px;
+      background: transparent;
+      border: none;
+      color: #999;
+      cursor: pointer;
+      font-size: 15px;
+      transition: all 0.3s;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+    }
+    .tab:hover {
+      color: #7eb8d4;
+      background: rgba(126, 184, 212, 0.1);
+    }
+    .tab.active {
+      color: #7eb8d4;
+      border-bottom-color: #7eb8d4;
+    }
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .feature-section {
+      margin-bottom: 32px;
+    }
+    .feature-title {
+      color: #7eb8d4;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #333;
+    }
+    .feature-content {
+      color: #ccc;
+      padding-left: 16px;
+      margin-bottom: 16px;
+    }
+    .feature-content p {
+      margin-bottom: 12px;
+    }
+    .feature-content ul {
+      list-style: none;
+      padding-left: 0;
+    }
+    .feature-content li {
+      padding: 6px 0;
+      padding-left: 20px;
+      position: relative;
+    }
+    .feature-content li:before {
+      content: "▸";
+      position: absolute;
+      left: 0;
+      color: #7eb8d4;
+    }
+    .code {
+      background: #1a1a1a;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      color: #a89fc8;
+      font-size: 13px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      background: #2a2a2a;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th {
+      background: #333;
+      color: #7eb8d4;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    td {
+      padding: 12px;
+      border-top: 1px solid #333;
+      color: #ccc;
+      font-size: 14px;
+    }
+    tr:hover {
+      background: rgba(126, 184, 212, 0.05);
+    }
+    .changelog-item {
+      background: #2a2a2a;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      border-left: 3px solid #7eb8d4;
+    }
+    .changelog-version {
+      color: #7eb8d4;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .changelog-date {
+      color: #999;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+    .changelog-changes {
+      list-style: none;
+      padding-left: 0;
+    }
+    .changelog-changes li {
+      padding: 4px 0;
+      padding-left: 20px;
+      position: relative;
+      color: #ccc;
+    }
+    .changelog-changes li:before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: #7eb8d4;
+      font-weight: bold;
+    }
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-right: 6px;
+      text-transform: uppercase;
+    }
+    .tag-new { background: #4a9eff; color: white; }
+    .tag-fix { background: #ff6b6b; color: white; }
+    .tag-improve { background: #51cf66; color: white; }
+    .back-link {
+      display: inline-block;
+      margin-top: 24px;
+      padding: 10px 20px;
+      background: rgba(126, 184, 212, 0.2);
+      color: #7eb8d4;
+      text-decoration: none;
+      border-radius: 6px;
+      transition: all 0.3s;
+    }
+    .back-link:hover {
+      background: rgba(126, 184, 212, 0.3);
+      transform: translateX(-4px);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📚 帮助文档</h1>
+    <div class="subtitle">涟宗也 v0.2 - 功能说明、变量参考与更新日志</div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('features')">功能说明</button>
+      <button class="tab" onclick="switchTab('variables')">可用变量</button>
+      <button class="tab" onclick="switchTab('changelog')">更新日志</button>
+    </div>
+
+    <!-- 功能说明 -->
+    <div id="features" class="tab-content active">
+      <div class="feature-section">
+        <div class="feature-title">💬 基础对话功能</div>
+        <div class="feature-content">
+          <p>与涟宗也进行自然对话，支持文本输入和多种交互方式。</p>
+          <ul>
+            <li>输入框支持 Shift+Enter 换行，Enter 发送</li>
+            <li>消息支持多行输入，每行会显示为独立的聊天气泡</li>
+            <li>AI 回复会自动解析动作指令（如 [MOTION:wave]）并触发 Live2D 动作</li>
+            <li>支持引用回复：点击消息旁的引用按钮，可以引用该消息进行回复</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="feature-section">
+        <div class="feature-title">🧠 记忆系统</div>
+        <div class="feature-content">
+          <p>涟宗也拥有长期记忆能力，会主动记住对话中的重要信息。</p>
+          <ul>
+            <li>自动记录用户偏好、重要事件、情感变化等信息</li>
+            <li>记忆分为三种类型：dynamic（可变）、permanent（永久）、feel（感受）</li>
+            <li>每条记忆包含重要度、情感效价、唤醒度等维度</li>
+            <li>在设置中可以查看、编辑和删除记忆</li>
+            <li>记忆会自动参与对话上下文，让 AI 更了解你</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="feature-section">
+        <div class="feature-title">💖 情感系统</div>
+        <div class="feature-content">
+          <p>涟宗也具有动态情感状态，会根据对话内容和时间流逝产生情感变化。</p>
+          <ul>
+            <li>六种即时情感：孤独感、亲密感、兴奋、烦躁、好奇、忧郁</li>
+            <li>长期亲密度：随着互动逐渐积累</li>
+            <li>情感会随时间自然衰减（基于半衰期模型）</li>
+            <li>AI 会在每次对话后主动更新情感状态</li>
+            <li>情感状态会影响 AI 的回复风格和语气</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="feature-section">
+        <div class="feature-title">🔍 性格与关系分析</div>
+        <div class="feature-content">
+          <p>系统会自动分析对话内容，总结用户性格特征和关系状态。</p>
+          <ul>
+            <li>当对话字符数达到阈值（默认 8000 字符）时自动触发</li>
+            <li>分析用户的性格特征、情绪倾向、喜好与禁忌</li>
+            <li>总结当前的关系状态、亲密度变化、关键转折事件</li>
+            <li>分析结果会注入到后续对话的上下文中</li>
+            <li>可在 <span class="code">/analysis_status.html</span> 查看分析状态</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="feature-section">
+        <div class="feature-title">🤖 主动消息</div>
+        <div class="feature-content">
+          <p>涟宗也会在你长时间未发消息时主动打招呼。</p>
+          <ul>
+            <li>可在设置中配置触发间隔和空闲时长</li>
+            <li>支持自定义主动消息的 prompt 模板</li>
+            <li>可使用变量（如 {user_name}、{idle_minutes}）</li>
+            <li>可设置是否要求页面可见才触发</li>
+            <li>使用"立即测试"按钮可以快速测试主动消息</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="feature-section">
+        <div class="feature-title">📝 Prompt 注入管理</div>
+        <div class="feature-content">
+          <p>高级功能：在对话的不同位置注入自定义 prompt。</p>
+          <ul>
+            <li>四种注入位置：system_top（系统提示词开头）、system_bottom（系统提示词结尾）、before_last_user（最后一条用户消息前）、after_last_user（最后一条用户消息后）</li>
+            <li>支持设置优先级（数字越大越优先）</li>
+            <li>可以启用/禁用单个注入条目</li>
+            <li>适合用于添加特定行为指令、角色扮演设定等</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="feature-section">
+        <div class="feature-title">🛠️ 工具调用</div>
+        <div class="feature-content">
+          <p>涟宗也可以调用多种工具来完成任务。</p>
+          <ul>
+            <li><span class="code">open_program</span>: 打开 Windows 程序或文件</li>
+            <li><span class="code">run_python</span>: 执行 Python 代码</li>
+            <li><span class="code">read_file / write_file</span>: 读写文件</li>
+            <li><span class="code">screenshot_and_understand</span>: 截屏并理解屏幕内容</li>
+            <li><span class="code">read_document</span>: 读取 PDF/EPUB/TXT 文档</li>
+            <li><span class="code">get_active_window</span>: 获取当前活动窗口</li>
+            <li><span class="code">list_running_apps</span>: 列出运行中的应用</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="feature-section">
+        <div class="feature-title">📖 共读模式</div>
+        <div class="feature-content">
+          <p>上传书籍文件，与涟宗也一起阅读和讨论。</p>
+          <ul>
+            <li>支持 TXT、PDF、EPUB、Markdown 格式</li>
+            <li>自动分章节解析</li>
+            <li>阅读进度自动保存</li>
+            <li>可以在阅读页面与 AI 讨论书籍内容</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="feature-section">
+        <div class="feature-title">🎨 Live2D 模型</div>
+        <div class="feature-content">
+          <p>支持加载 Live2D 模型，让涟宗也拥有动态形象。</p>
+          <ul>
+            <li>在设置中上传 model3.json 文件</li>
+            <li>支持眼球追踪、呼吸动画</li>
+            <li>AI 可以通过动作指令控制模型动作和表情</li>
+            <li>可在设置中启用/禁用各项功能</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- 可用变量 -->
+    <div id="variables" class="tab-content">
+      <p style="margin-bottom: 16px; color: #ccc;">在主动消息 prompt 和其他可自定义的文本中，可以使用以下变量：</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 30%;">变量名</th>
+            <th style="width: 70%;">说明</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="code">{user_name}</span></td>
+            <td>用户名字（在设置中配置）</td>
+          </tr>
+          <tr>
+            <td><span class="code">{idle_minutes}</span></td>
+            <td>用户空闲时长（分钟），仅在主动消息中可用</td>
+          </tr>
+          <tr>
+            <td><span class="code">{time_context}</span></td>
+            <td>当前时间段描述（清晨/上午/中午/下午/傍晚/晚上/深夜）</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="feature-section" style="margin-top: 32px;">
+        <div class="feature-title">使用示例</div>
+        <div class="feature-content">
+          <p><strong>主动消息 prompt 示例：</strong></p>
+          <p style="background: #1a1a1a; padding: 12px; border-radius: 6px; margin-top: 8px;">
+            {user_name} 已经 {idle_minutes} 分钟没有回复了，现在是{time_context}。<br>
+            请主动问候一下，语气要符合涟宗也的性格：冷淡、简短、但隐约透着关心。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 更新日志 -->
+    <div id="changelog" class="tab-content">
+      <div class="changelog-item">
+        <div class="changelog-version">v0.2.2</div>
+        <div class="changelog-date">2024年 - 当前版本</div>
+        <ul class="changelog-changes">
+          <li><span class="tag tag-new">新增</span>性格与关系分析功能：自动分析对话内容，总结用户性格和关系状态</li>
+          <li><span class="tag tag-new">新增</span>消息引用回复功能：可以引用之前的消息进行回复</li>
+          <li><span class="tag tag-new">新增</span>Prompt 注入管理系统：支持在对话的不同位置注入自定义 prompt</li>
+          <li><span class="tag tag-new">新增</span>多行消息气泡显示：用户消息按换行符拆分为多个气泡</li>
+          <li><span class="tag tag-improve">优化</span>记忆系统：增强 AI 主动保存记忆的频率和质量</li>
+          <li><span class="tag tag-improve">优化</span>情感系统：AI 会在每次对话后主动更新情感状态</li>
+          <li><span class="tag tag-improve">优化</span>系统提示词：添加记忆和情感使用指南</li>
+          <li><span class="tag tag-new">新增</span>帮助文档页面：提供完整的功能说明和变量参考</li>
+        </ul>
+      </div>
+
+      <div class="changelog-item">
+        <div class="changelog-version">v0.2.1</div>
+        <div class="changelog-date">2024年</div>
+        <ul class="changelog-changes">
+          <li><span class="tag tag-new">新增</span>主动消息功能：AI 会在用户长时间未发消息时主动打招呼</li>
+          <li><span class="tag tag-new">新增</span>活动状态监控：追踪用户的窗口活动、鼠标状态等</li>
+          <li><span class="tag tag-new">新增</span>共读模式：支持上传书籍与 AI 一起阅读讨论</li>
+          <li><span class="tag tag-improve">优化</span>情感系统：引入时间衰减机制</li>
+          <li><span class="tag tag-fix">修复</span>对话历史压缩逻辑</li>
+        </ul>
+      </div>
+
+      <div class="changelog-item">
+        <div class="changelog-version">v0.2.0</div>
+        <div class="changelog-date">2024年</div>
+        <ul class="changelog-changes">
+          <li><span class="tag tag-new">新增</span>情感系统：六维情感状态 + 长期亲密度</li>
+          <li><span class="tag tag-new">新增</span>记忆系统：支持 dynamic/permanent/feel 三种类型</li>
+          <li><span class="tag tag-new">新增</span>Live2D 支持：可加载 Live2D 模型</li>
+          <li><span class="tag tag-new">新增</span>工具调用系统：支持文件操作、截图理解等</li>
+          <li><span class="tag tag-new">新增</span>对话历史管理：自动压缩和总结</li>
+          <li><span class="tag tag-improve">优化</span>UI 设计：全新的深色主题界面</li>
+        </ul>
+      </div>
+
+      <div class="changelog-item">
+        <div class="changelog-version">v0.1.0</div>
+        <div class="changelog-date">2024年</div>
+        <ul class="changelog-changes">
+          <li><span class="tag tag-new">新增</span>基础对话功能</li>
+          <li><span class="tag tag-new">新增</span>角色卡片系统</li>
+          <li><span class="tag tag-new">新增</span>API 配置管理</li>
+          <li><span class="tag tag-new">新增</span>头像上传功能</li>
+        </ul>
+      </div>
+    </div>
+
+    <a href="/" class="back-link">← 返回主页</a>
+  </div>
+
+  <script>
+    function switchTab(tabName) {
+      // Hide all tab contents
+      document.querySelectorAll('.tab-content').forEach(el => {
+        el.classList.remove('active');
+      });
+      // Remove active class from all tabs
+      document.querySelectorAll('.tab').forEach(el => {
+        el.classList.remove('active');
+      });
+      // Show selected tab content
+      document.getElementById(tabName).classList.add('active');
+      // Add active class to clicked tab
+      event.target.classList.add('active');
+    }
+  </script>
+</body>
+</html>

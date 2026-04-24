@@ -151,62 +151,87 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 #send-btn:disabled{opacity:.4;cursor:default}
 
 /* ── Modals ── */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:100;align-items:center;justify-content:center;animation:fadeIn .2s}
 .modal-overlay.show{display:flex}
-.modal{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:24px;width:520px;max-width:95vw;max-height:85vh;overflow-y:auto;position:relative}
-.modal h2{font-size:16px;font-weight:600;margin-bottom:18px;color:var(--text)}
-.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px;line-height:1}
-.modal-close:hover{color:var(--text)}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:linear-gradient(135deg,var(--bg2) 0%,var(--bg) 100%);border:1px solid var(--border);border-radius:20px;padding:28px;width:560px;max-width:95vw;max-height:85vh;overflow-y:auto;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.5);animation:slideUp .3s}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.modal h2{font-size:18px;font-weight:700;margin-bottom:20px;color:var(--accent);letter-spacing:.02em;display:flex;align-items:center;gap:8px}
+.modal-close{position:absolute;top:20px;right:20px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);cursor:pointer;font-size:16px;line-height:1;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:.2s}
+.modal-close:hover{background:var(--danger);color:#fff;border-color:var(--danger);transform:rotate(90deg)}
 
 /* Tabs */
-.tabs{display:flex;gap:2px;margin-bottom:18px;background:var(--bg3);border-radius:10px;padding:3px}
-.tab{flex:1;text-align:center;padding:6px;border-radius:8px;cursor:pointer;font-size:12px;color:var(--text2);transition:.15s}
-.tab.active{background:var(--bg4);color:var(--text);font-weight:600}
+.tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--bg3);border-radius:12px;padding:4px;box-shadow:inset 0 2px 4px rgba(0,0,0,.2)}
+.tab{flex:1;text-align:center;padding:8px 4px;border-radius:9px;cursor:pointer;font-size:12px;color:var(--text2);transition:.2s;font-weight:500;position:relative}
+.tab:hover:not(.active){background:rgba(126,184,212,.08);color:var(--text)}
+.tab.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-weight:600;box-shadow:0 2px 8px rgba(126,184,212,.3)}
 
 /* Form Elements */
-.form-group{margin-bottom:14px}
-.form-label{font-size:12px;color:var(--text2);margin-bottom:5px;display:block}
-.form-input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 11px;border-radius:8px;font-size:13px;outline:none;transition:.15s}
-.form-input:focus{border-color:var(--accent)}
+.form-group{margin-bottom:18px;position:relative}
+.form-label{font-size:12px;color:var(--accent);margin-bottom:6px;display:block;font-weight:600;letter-spacing:.02em}
+.form-input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:10px;font-size:13px;outline:none;transition:.2s;box-shadow:inset 0 1px 3px rgba(0,0,0,.1)}
+.form-input:focus{border-color:var(--accent);background:var(--bg4);box-shadow:0 0 0 3px rgba(126,184,212,.1),inset 0 1px 3px rgba(0,0,0,.1)}
+.form-input::placeholder{color:var(--text3);opacity:.6}
 .form-row{display:flex;gap:8px;align-items:center}
 .form-row .form-input{flex:1}
-.form-hint{font-size:11px;color:var(--text3);margin-top:4px}
-.form-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px;transition:.15s;white-space:nowrap}
-.form-btn:hover{background:var(--bg4);color:var(--text)}
-.form-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
-.form-btn.primary:hover{opacity:.85}
+.form-hint{font-size:11px;color:var(--text3);margin-top:5px;line-height:1.5;padding-left:2px}
+.form-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:8px 16px;border-radius:10px;cursor:pointer;font-size:12px;transition:.2s;white-space:nowrap;font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.form-btn:hover{background:var(--bg4);color:var(--text);transform:translateY(-1px);box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.form-btn:active{transform:translateY(0);box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.form-btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-color:transparent;box-shadow:0 2px 8px rgba(126,184,212,.3)}
+.form-btn.primary:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 4px 12px rgba(126,184,212,.4)}
 .form-btn.danger{border-color:var(--danger);color:var(--danger)}
-.form-btn.danger:hover{background:var(--danger);color:#fff}
-.toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.toggle-label{font-size:13px;color:var(--text)}
-.toggle{position:relative;width:40px;height:22px;cursor:pointer}
+.form-btn.danger:hover{background:var(--danger);color:#fff;box-shadow:0 2px 8px rgba(204,68,119,.3)}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:10px 12px;background:var(--bg3);border-radius:10px;border:1px solid var(--border);transition:.2s}
+.toggle-row:hover{border-color:var(--accent);background:rgba(126,184,212,.05)}
+.toggle-label{font-size:13px;color:var(--text);font-weight:500}
+.toggle{position:relative;width:44px;height:24px;cursor:pointer;flex-shrink:0}
 .toggle input{opacity:0;width:0;height:0}
-.toggle-slider{position:absolute;inset:0;background:var(--bg4);border-radius:11px;transition:.2s;border:1px solid var(--border)}
-.toggle-slider::before{content:'';position:absolute;width:16px;height:16px;left:2px;top:2px;background:var(--text3);border-radius:50%;transition:.2s}
-.toggle input:checked+.toggle-slider{background:var(--accent);border-color:var(--accent)}
-.toggle input:checked+.toggle-slider::before{transform:translateX(18px);background:#fff}
+.toggle-slider{position:absolute;inset:0;background:var(--bg4);border-radius:12px;transition:.25s;border:1px solid var(--border);box-shadow:inset 0 1px 3px rgba(0,0,0,.2)}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:2px;top:2px;background:var(--text3);border-radius:50%;transition:.25s;box-shadow:0 2px 4px rgba(0,0,0,.2)}
+.toggle input:checked+.toggle-slider{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent;box-shadow:0 2px 8px rgba(126,184,212,.3)}
+.toggle input:checked+.toggle-slider::before{transform:translateX(20px);background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3)}
 
 /* Avatar preview */
-.avatar-preview-row{display:flex;gap:20px;align-items:flex-start;margin-bottom:16px}
-.avatar-slot{display:flex;flex-direction:column;align-items:center;gap:8px}
-.avatar-preview{width:72px;height:72px;border-radius:50%;object-fit:cover;background:var(--bg4);border:2px solid var(--border);cursor:pointer;transition:.15s}
-.avatar-preview:hover{border-color:var(--accent)}
-.avatar-slot-label{font-size:11px;color:var(--text3)}
+.avatar-preview-row{display:flex;gap:24px;align-items:flex-start;margin-bottom:20px;padding:16px;background:var(--bg3);border-radius:12px;border:1px solid var(--border)}
+.avatar-slot{display:flex;flex-direction:column;align-items:center;gap:10px;flex:1}
+.avatar-preview{width:80px;height:80px;border-radius:50%;object-fit:cover;background:var(--bg4);border:3px solid var(--border);cursor:pointer;transition:.25s;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.avatar-preview:hover{border-color:var(--accent);transform:scale(1.05);box-shadow:0 6px 20px rgba(126,184,212,.3)}
+.avatar-slot-label{font-size:11px;color:var(--text2);font-weight:600;letter-spacing:.04em}
 
 /* Tag list for model management */
-.tag-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.model-tag{background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:4px 10px;border-radius:20px;font-size:12px;display:flex;align-items:center;gap:6px}
-.model-tag .del{cursor:pointer;color:var(--text3);font-size:10px}
-.model-tag .del:hover{color:var(--danger)}
-.model-tag.active-model{border-color:var(--accent);color:var(--accent)}
+.tag-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;padding:12px;background:var(--bg3);border-radius:10px;border:1px solid var(--border);min-height:48px}
+.model-tag{background:var(--bg4);border:1px solid var(--border);color:var(--text2);padding:6px 12px;border-radius:20px;font-size:12px;display:flex;align-items:center;gap:8px;transition:.2s;cursor:pointer;font-weight:500}
+.model-tag:hover{border-color:var(--accent);color:var(--text);transform:translateY(-1px);box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.model-tag .del{cursor:pointer;color:var(--text3);font-size:11px;font-weight:700;transition:.2s}
+.model-tag .del:hover{color:var(--danger);transform:scale(1.2)}
+.model-tag.active-model{border-color:var(--accent);color:var(--accent);background:rgba(126,184,212,.12);box-shadow:0 2px 8px rgba(126,184,212,.2)}
 
 /* Memory Panel */
-.mem-item{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:var(--bg3);border-radius:8px;margin-bottom:6px;border:1px solid var(--border)}
-.mem-key{font-weight:600;font-size:12px;color:var(--accent);flex-shrink:0;min-width:80px}
-.mem-val{font-size:12px;color:var(--text2);flex:1;line-height:1.4}
-.mem-time{font-size:10px;color:var(--text3);flex-shrink:0}
-.mem-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;flex-shrink:0;padding:0 2px}
-.mem-del:hover{color:var(--danger)}
+.mem-item{display:flex;flex-direction:column;gap:6px;padding:10px 12px;background:var(--bg3);border-radius:8px;margin-bottom:8px;border:1px solid var(--border);position:relative}
+.mem-item.archived{opacity:.5;border-color:var(--text3)}
+.mem-item.pinned{border-color:var(--accent);background:rgba(126,184,212,.08)}
+.mem-header{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.mem-key{font-weight:600;font-size:13px;color:var(--accent);flex:1}
+.mem-type-badge{font-size:9px;padding:2px 6px;border-radius:10px;text-transform:uppercase;font-weight:600;letter-spacing:.04em}
+.mem-type-dynamic{background:rgba(126,184,212,.15);color:var(--accent);border:1px solid rgba(126,184,212,.3)}
+.mem-type-permanent{background:rgba(74,169,153,.15);color:#4a9;border:1px solid rgba(74,169,153,.3)}
+.mem-type-feel{background:rgba(168,159,200,.15);color:var(--accent2);border:1px solid rgba(168,159,200,.3)}
+.mem-type-archived{background:rgba(102,102,119,.15);color:var(--text3);border:1px solid rgba(102,102,119,.3)}
+.mem-val{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:6px}
+.mem-meta{display:flex;flex-wrap:wrap;gap:8px;font-size:10px;color:var(--text3);align-items:center}
+.mem-meta-item{display:flex;align-items:center;gap:3px}
+.mem-meta-item .icon{font-size:11px}
+.mem-score{font-weight:600;color:var(--accent)}
+.mem-actions{position:absolute;top:8px;right:8px;display:flex;gap:4px;opacity:0;transition:.15s}
+.mem-item:hover .mem-actions{opacity:1}
+.mem-btn{background:var(--bg4);border:1px solid var(--border);color:var(--text2);padding:3px 7px;border-radius:5px;font-size:10px;cursor:pointer;transition:.15s}
+.mem-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.mem-btn.danger:hover{background:var(--danger);border-color:var(--danger)}
+.mem-filter-tabs{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap}
+.mem-filter-tab{padding:5px 12px;border-radius:16px;font-size:11px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);cursor:pointer;transition:.15s}
+.mem-filter-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.mem-filter-tab:hover:not(.active){border-color:var(--accent);color:var(--text)}
 
 /* Image preview overlay */
 #img-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:200;align-items:center;justify-content:center;cursor:pointer}
@@ -232,6 +257,33 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
   user-select: none;
 }
 .time-divider::before,.time-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── Fold Toggle ── */
+.fold-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  margin: 8px 0;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--text2);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s;
+}
+.fold-toggle:hover {
+  background: var(--bg4);
+  border-color: var(--accent);
+  color: var(--text);
+}
+.fold-toggle #fold-icon {
+  display: inline-block;
+  margin-right: 6px;
+  transition: transform 0.2s;
+}
 
 /* ── Search Bar ── */
 #search-bar{display:none;padding:8px 16px;background:var(--bg3);border-bottom:1px solid var(--border);gap:8px;align-items:center;flex-shrink:0}
@@ -296,6 +348,7 @@ body.light mark.search-highlight{background:rgba(90,154,184,.3);color:var(--text
   <button class="tb-btn" onclick="openModal('modal-memory')">🧠 记忆</button>
   <button class="tb-btn" onclick="openModal('modal-activity')">📊 活动</button>
   <button class="tb-btn" onclick="window.location.href='/reader'">📖 阅读</button>
+  <button class="tb-btn" onclick="window.location.href='/help'">📚 帮助</button>
   <button class="tb-btn" onclick="openCompressModal()">⬛ 压缩</button>
   <button class="tb-btn" id="btn-search" onclick="toggleSearch()">🔍 搜索</button>
   <button class="tb-btn danger" onclick="confirmClear()">🗑 清空</button>
@@ -345,6 +398,17 @@ body.light mark.search-highlight{background:rgba(90,154,184,.3);color:var(--text
     </div>
     <div id="messages"></div>
     <div id="typing"><div class="avatar-placeholder">涟</div><div class="typing-dots"><span></span><span></span><span></span></div><span class="typing-name">涟宗也 思考中…</span></div>
+    <!-- Quote preview bar -->
+    <div id="quote-preview" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin:8px 12px 0 12px;display:none;align-items:center;justify-content:space-between">
+      <div style="flex:1;display:flex;align-items:center;gap:8px;overflow:hidden">
+        <div style="width:3px;height:100%;background:var(--accent);border-radius:2px;align-self:stretch"></div>
+        <div style="flex:1;overflow:hidden">
+          <div id="quote-role-label" style="font-size:11px;color:var(--accent);font-weight:600;margin-bottom:2px"></div>
+          <div id="quote-text-preview" style="font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+        </div>
+      </div>
+      <button id="quote-cancel-btn" onclick="clearQuote()" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:0 4px;line-height:1">×</button>
+    </div>
     <div id="input-bar">
       <button id="sc-btn" title="截图并提问" onclick="toggleScreenshot()">📸</button>
       <button id="img-btn" title="发送图片" onclick="document.getElementById('file-input').click()">🖼</button>
@@ -434,17 +498,27 @@ body.light mark.search-highlight{background:rgba(90,154,184,.3);color:var(--text
   <button class="modal-close" onclick="closeModal('modal-settings')">✕</button>
   <h2>⚙ 设置</h2>
   <div class="tabs">
-    <div class="tab active" onclick="switchTab(this,'tab-api')">API</div>
-    <div class="tab" onclick="switchTab(this,'tab-user')">用户</div>
-    <div class="tab" onclick="switchTab(this,'tab-charcard')">角色卡</div>
-    <div class="tab" onclick="switchTab(this,'tab-compress')">压缩</div>
-    <div class="tab" onclick="switchTab(this,'tab-proactive')">主动消息</div>
-    <div class="tab" onclick="switchTab(this,'tab-conv')">对话</div>
-    <div class="tab" onclick="switchTab(this,'tab-live2d')">Live2D</div>
+    <div class="tab active" onclick="switchTab(this,'tab-api')">🔑 API</div>
+    <div class="tab" onclick="switchTab(this,'tab-user')">👤 用户</div>
+    <div class="tab" onclick="switchTab(this,'tab-charcard')">🎭 角色</div>
+    <div class="tab" onclick="switchTab(this,'tab-memory')">🧠 记忆</div>
+    <div class="tab" onclick="switchTab(this,'tab-compress')">⬛ 压缩</div>
+    <div class="tab" onclick="switchTab(this,'tab-proactive')">💬 主动</div>
+    <div class="tab" onclick="switchTab(this,'tab-conv')">💭 对话</div>
+    <div class="tab" onclick="switchTab(this,'tab-injections')">💉 注入</div>
+    <div class="tab" onclick="switchTab(this,'tab-live2d')">🎨 Live2D</div>
   </div>
 
   <!-- API Tab -->
   <div id="tab-api">
+    <div style="background:rgba(126,184,212,.08);border:1px solid rgba(126,184,212,.2);border-radius:12px;padding:14px;margin-bottom:20px">
+      <div style="font-size:12px;color:var(--accent);font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+        <span>🔑</span><span>API 配置</span>
+      </div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.6">
+        配置 AI 模型的 API 地址和密钥，支持 Claude、GPT 等兼容 OpenAI 格式的 API。
+      </div>
+    </div>
     <div class="form-group">
       <label class="form-label">API 地址</label>
       <input class="form-input" id="s-api-base" placeholder="https://api.xxx.com/v1">
@@ -460,26 +534,34 @@ body.light mark.search-highlight{background:rgba(90,154,184,.3);color:var(--text
     <div class="form-group">
       <label class="form-label">模型列表（点击切换，点 × 删除）</label>
       <div class="tag-list" id="model-tags"></div>
-      <div class="form-row" style="margin-top:8px">
+      <div class="form-row" style="margin-top:10px">
         <input class="form-input" id="s-new-model" placeholder="添加新模型名…">
         <button class="form-btn" onclick="addModel()">添加</button>
       </div>
     </div>
-    <button class="form-btn primary" onclick="saveSettings()">保存</button>
+    <button class="form-btn primary" onclick="saveSettings()">💾 保存设置</button>
   </div>
 
   <!-- User Tab -->
   <div id="tab-user" style="display:none">
+    <div style="background:rgba(168,159,200,.08);border:1px solid rgba(168,159,200,.2);border-radius:12px;padding:14px;margin-bottom:20px">
+      <div style="font-size:12px;color:var(--accent2);font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+        <span>👤</span><span>用户信息</span>
+      </div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.6">
+        设置你的个人信息和头像，让涟宗也更好地认识你。
+      </div>
+    </div>
     <div class="avatar-preview-row">
       <div class="avatar-slot">
         <img class="avatar-preview" id="prev-user-avatar" src="" onerror="this.style.display='none'" onclick="triggerAvatarUpload('user')">
-        <div class="avatar-placeholder" id="prev-user-placeholder" style="width:72px;height:72px;font-size:22px;border-radius:50%;cursor:pointer" onclick="triggerAvatarUpload('user')">👤</div>
+        <div class="avatar-placeholder" id="prev-user-placeholder" style="width:80px;height:80px;font-size:24px;border-radius:50%;cursor:pointer" onclick="triggerAvatarUpload('user')">👤</div>
         <div class="avatar-slot-label">我的头像</div>
         <input type="file" id="avatar-user-input" accept="image/*,.txt,.pdf,.epub,.md" style="display:none" onchange="uploadAvatar(event,'user')">
       </div>
       <div class="avatar-slot">
         <img class="avatar-preview" id="prev-ai-avatar" src="" onerror="this.style.display='none'" onclick="triggerAvatarUpload('ai')">
-        <div class="avatar-placeholder" id="prev-ai-placeholder" style="width:72px;height:72px;font-size:22px;border-radius:50%;cursor:pointer" onclick="triggerAvatarUpload('ai')">涟</div>
+        <div class="avatar-placeholder" id="prev-ai-placeholder" style="width:80px;height:80px;font-size:24px;border-radius:50%;cursor:pointer" onclick="triggerAvatarUpload('ai')">涟</div>
         <div class="avatar-slot-label">AI 头像</div>
         <input type="file" id="avatar-ai-input" accept="image/*,.txt,.pdf,.epub,.md" style="display:none" onchange="uploadAvatar(event,'ai')">
       </div>
@@ -492,11 +574,19 @@ body.light mark.search-highlight{background:rgba(90,154,184,.3);color:var(--text
       <label class="form-label">用户描述（可选，让涟宗也更了解你）</label>
       <textarea class="form-input" id="s-user-desc" rows="3" placeholder="例如：喜欢猫、学生、夜猫子…"></textarea>
     </div>
-    <button class="form-btn primary" onclick="saveSettings()">保存</button>
+    <button class="form-btn primary" onclick="saveSettings()">💾 保存设置</button>
   </div>
 
   <!-- CharCard Tab -->
   <div id="tab-charcard" style="display:none">
+    <div style="background:rgba(74,169,153,.08);border:1px solid rgba(74,169,153,.2);border-radius:12px;padding:14px;margin-bottom:20px">
+      <div style="font-size:12px;color:#4a9;font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+        <span>🎭</span><span>角色卡片</span>
+      </div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.6">
+        自定义涟宗也的角色设定。留空则使用默认设定。
+      </div>
+    </div>
     <div class="form-group">
       <label class="form-label">角色名称</label>
       <input class="form-input" id="s-char-name" placeholder="留空则使用默认：涟宗也">
@@ -521,14 +611,81 @@ body.light mark.search-highlight{background:rgba(90,154,184,.3);color:var(--text
       <label class="form-label">对话示例</label>
       <textarea class="form-input" id="s-char-examples" rows="6" placeholder="留空则使用默认内容（示例对话）"></textarea>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="form-btn primary" onclick="saveSettings()">保存</button>
-      <button class="form-btn" onclick="resetCharCard()">恢复默认</button>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="form-btn primary" onclick="saveSettings()">💾 保存设置</button>
+      <button class="form-btn" onclick="resetCharCard()">🔄 恢复默认</button>
     </div>
+  </div>
+
+  <!-- Memory Tab -->
+  <div id="tab-memory" style="display:none">
+    <div style="background:rgba(168,159,200,.08);border:1px solid rgba(168,159,200,.2);border-radius:12px;padding:14px;margin-bottom:20px">
+      <div style="font-size:12px;color:var(--accent2);font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+        <span>🧠</span><span>记忆系统</span>
+      </div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.6">
+        选择记忆引擎和配置记忆系统参数。
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">记忆引擎</label>
+      <select class="form-input" id="s-memory-engine" onchange="onMemoryEngineChange()">
+        <option value="simple">简单模式（默认）</option>
+        <option value="ombre">Ombre-Brain（高级）</option>
+      </select>
+      <p class="form-hint">简单模式：基础记忆功能。Ombre-Brain：支持情感向量、遗忘曲线、自省等高级功能。</p>
+    </div>
+    <div id="ombre-settings" style="display:none">
+      <div style="border-top:1px solid var(--border);margin:18px 0;"></div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:12px;font-weight:600">Ombre-Brain 配置</div>
+      <div class="form-group">
+        <label class="form-label">记忆桶目录</label>
+        <input class="form-input" id="s-ombre-buckets-dir" placeholder="./ombre_buckets">
+        <p class="form-hint">存储记忆文件的目录路径。</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label">向量数据库路径</label>
+        <input class="form-input" id="s-ombre-vector-db" placeholder="./ombre_buckets/vectors.db">
+        <p class="form-hint">用于语义搜索的向量数据库文件路径。</p>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">启用记忆衰减</span>
+        <label class="toggle"><input type="checkbox" id="s-ombre-decay-enabled" checked><span class="toggle-slider"></span></label>
+      </div>
+      <p class="form-hint">基于遗忘曲线自动降低旧记忆的权重，模拟真实的记忆衰减。</p>
+      <div class="form-group">
+        <label class="form-label">衰减检查间隔（小时）</label>
+        <input class="form-input" id="s-ombre-decay-interval" type="number" min="1" max="168" value="24">
+        <p class="form-hint">每隔多少小时检查一次记忆衰减。</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label">归档阈值</label>
+        <input class="form-input" id="s-ombre-archive-threshold" type="number" min="0" max="1" step="0.1" value="0.3">
+        <p class="form-hint">记忆权重低于此值时自动归档（0.0-1.0）。</p>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);margin:18px 0;"></div>
+    <div class="form-group">
+      <label class="form-label">情感系统</label>
+      <select class="form-input" id="s-emotion-system">
+        <option value="occ">OCC 认知评价模型（推荐）</option>
+        <option value="simple">简单模式</option>
+      </select>
+      <p class="form-hint">OCC 模型：AI 对事件进行认知评价，自然产生情绪。简单模式：直接标签式情绪。</p>
+    </div>
+    <button class="form-btn primary" onclick="saveSettings()">💾 保存设置</button>
   </div>
 
   <!-- Compress Tab -->
   <div id="tab-compress" style="display:none">
+    <div style="background:rgba(204,68,119,.08);border:1px solid rgba(204,68,119,.2);border-radius:12px;padding:14px;margin-bottom:20px">
+      <div style="font-size:12px;color:var(--danger);font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+        <span>⬛</span><span>历史压缩</span>
+      </div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.6">
+        当对话历史过长时，AI 会自动总结旧消息并隐藏，保留最近的对话。
+      </div>
+    </div>
     <div class="form-group">
       <label class="form-label">触发压缩后保留最近 N 条消息</label>
       <input class="form-input" id="s-keep-recent" type="number" min="4" max="50" value="10">
@@ -537,16 +694,24 @@ body.light mark.search-highlight{background:rgba(90,154,184,.3);color:var(--text
       <label class="form-label">总结提示词</label>
       <textarea class="form-input" id="s-summary-prompt" rows="4">请用简洁的第三人称总结以上对话的主要内容、情感变化和关键信息，控制在200字以内。</textarea>
     </div>
-    <button class="form-btn primary" onclick="saveSettings()">保存</button>
+    <button class="form-btn primary" onclick="saveSettings()">💾 保存设置</button>
   </div>
 
   <!-- Proactive Message Tab -->
   <div id="tab-proactive" style="display:none">
+    <div style="background:rgba(126,184,212,.08);border:1px solid rgba(126,184,212,.2);border-radius:12px;padding:14px;margin-bottom:20px">
+      <div style="font-size:12px;color:var(--accent);font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+        <span>💬</span><span>主动消息</span>
+      </div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.6">
+        涟宗也会在你长时间未发消息时主动打招呼。
+      </div>
+    </div>
     <div class="toggle-row">
       <span class="toggle-label">要求页面可见才发送主动消息</span>
       <label class="toggle"><input type="checkbox" id="s-proactive-visible" checked><span class="toggle-slider"></span></label>
     </div>
-    <p class="form-hint" style="margin-bottom:14px">关闭后，即使用户切换到其他标签页，AI 也会发送主动消息</p>
+    <p class="form-hint" style="margin-bottom:16px">关闭后，即使用户切换到其他标签页，AI 也会发送主动消息</p>
     <div class="form-group">
       <label class="form-label">主动消息最短间隔（分钟）</label>
       <input class="form-input" id="s-proactive-interval" type="number" min="1" max="1440" value="20">
@@ -557,16 +722,44 @@ body.light mark.search-highlight{background:rgba(90,154,184,.3);color:var(--text
       <input class="form-input" id="s-proactive-idle" type="number" min="1" max="1440" value="15">
       <p class="form-hint">用户超过该时间未发消息，AI 才会主动打招呼</p>
     </div>
-    <button class="form-btn primary" onclick="saveSettings()">保存</button>
-    <button class="form-btn" onclick="testProactive()" style="margin-left:8px">立即触发一次（测试）</button>
+    <div class="form-group">
+      <label class="form-label">主动消息提示词（自定义 AI 主动发消息时的行为）</label>
+      <textarea class="form-input" id="s-proactive-prompt" rows="6" placeholder="留空使用默认提示词"></textarea>
+      <p class="form-hint">可用变量：{user_name}、{idle_minutes}、{time_context}。留空则使用内置默认提示词。</p>
+    </div>
+    <div class="form-group">
+      <label class="form-label">性格/关系分析触发阈值（字符数）</label>
+      <input class="form-input" id="s-analysis-threshold" type="number" min="2000" max="50000" step="1000" value="8000">
+      <p class="form-hint">每隔此字符数自动分析一次用户性格与双方关系（建议 5000~15000）</p>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="form-btn primary" onclick="saveSettings()">💾 保存设置</button>
+      <button class="form-btn" onclick="testProactive()">🧪 立即测试</button>
+    </div>
+    <div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--border)">
+      <button class="form-btn" onclick="refreshProactiveStatus()" style="font-size:12px">
+        🔍 刷新触发条件状态
+      </button>
+      <pre id="proactive-status-box"
+           style="margin-top:10px;font-size:11px;background:var(--bg3);color:var(--text2);
+                  border-radius:10px;padding:12px;white-space:pre-wrap;display:none;line-height:1.6;border:1px solid var(--border)"></pre>
+    </div>
   </div>
   <div id="tab-conv" style="display:none">
+    <div style="background:rgba(168,159,200,.08);border:1px solid rgba(168,159,200,.2);border-radius:12px;padding:14px;margin-bottom:20px">
+      <div style="font-size:12px;color:var(--accent2);font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+        <span>💭</span><span>对话设置</span>
+      </div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.6">
+        调整对话上下文长度和通知设置。
+      </div>
+    </div>
     <div class="form-group">
       <label class="form-label">AI 读取近 N 轮对话（上下文轮数）</label>
       <input class="form-input" id="s-context-rounds" type="number" min="1" max="200" value="20">
       <p class="form-hint">每轮 = 1条用户消息 + 1条AI回复。数值越大上下文越长，但可能影响AI的理解速度。建议 10~30。</p>
     </div>
-    <div style="border-top:1px solid var(--border);margin:14px 0 14px;"></div>
+    <div style="border-top:1px solid var(--border);margin:18px 0;"></div>
     <div class="toggle-row">
       <span class="toggle-label">桌面通知</span>
       <label class="toggle" id="desktop-notif-toggle-wrap">
@@ -575,11 +768,36 @@ body.light mark.search-highlight{background:rgba(90,154,184,.3);color:var(--text
       </label>
     </div>
     <p class="form-hint" id="desktop-notif-hint">开启后，当涟宗也回复消息但你不在此标签页时，会弹出桌面通知。</p>
-    <button class="form-btn primary" onclick="saveSettings()" style="margin-top:14px">保存</button>
+    <button class="form-btn primary" onclick="saveSettings()" style="margin-top:16px">💾 保存设置</button>
+  </div>
+
+  <!-- Prompt Injections Tab -->
+  <div id="tab-injections" style="display:none">
+    <div style="background:rgba(204,68,119,.08);border:1px solid rgba(204,68,119,.2);border-radius:12px;padding:14px;margin-bottom:20px">
+      <div style="font-size:12px;color:var(--danger);font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+        <span>💉</span><span>Prompt 注入</span>
+      </div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.6">
+        高级功能：在对话的不同位置注入自定义 prompt，影响 AI 行为。
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-size:13px;color:var(--text2)">管理 Prompt 注入条目</div>
+      <button class="form-btn primary" onclick="openInjectionEditor(null)" style="font-size:12px;padding:6px 14px">+ 新增条目</button>
+    </div>
+    <div id="injections-list" style="display:flex;flex-direction:column;gap:10px"></div>
   </div>
 
   <!-- Live2D Tab -->
   <div id="tab-live2d" style="display:none">
+    <div style="background:rgba(74,169,153,.08);border:1px solid rgba(74,169,153,.2);border-radius:12px;padding:14px;margin-bottom:20px">
+      <div style="font-size:12px;color:#4a9;font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+        <span>🎨</span><span>Live2D 模型</span>
+      </div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.6">
+        加载 Live2D 模型，让涟宗也拥有动态形象。
+      </div>
+    </div>
     <div class="toggle-row">
       <span class="toggle-label">启用 Live2D</span>
       <label class="toggle"><input type="checkbox" id="s-l2d-enabled" onchange="onL2DToggle()"><span class="toggle-slider"></span></label>
@@ -602,7 +820,7 @@ body.light mark.search-highlight{background:rgba(90,154,184,.3);color:var(--text
         <label class="toggle"><input type="checkbox" id="s-l2d-ai" checked><span class="toggle-slider"></span></label>
       </div>
     </div>
-    <button class="form-btn primary" onclick="saveSettings()">保存</button>
+    <button class="form-btn primary" onclick="saveSettings()">💾 保存设置</button>
   </div>
 </div>
 </div>
@@ -639,15 +857,69 @@ body.light mark.search-highlight{background:rgba(90,154,184,.3);color:var(--text
     <button class="form-btn primary" onclick="exportMemory()">⬇ 导出记忆</button>
     <button class="form-btn" onclick="loadMemory()">🔄 刷新</button>
   </div>
+  <div class="mem-filter-tabs">
+    <div class="mem-filter-tab active" data-filter="all" onclick="filterMemory('all')">全部</div>
+    <div class="mem-filter-tab" data-filter="dynamic" onclick="filterMemory('dynamic')">动态记忆</div>
+    <div class="mem-filter-tab" data-filter="permanent" onclick="filterMemory('permanent')">长期记忆</div>
+    <div class="mem-filter-tab" data-filter="feel" onclick="filterMemory('feel')">自省感受</div>
+    <div class="mem-filter-tab" data-filter="archived" onclick="filterMemory('archived')">已归档</div>
+  </div>
   <div id="mem-list"></div>
   <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
     <div class="form-group">
       <label class="form-label">手动添加记忆</label>
-      <div class="form-row">
+      <div class="form-row" style="margin-bottom:8px">
         <input class="form-input" id="mem-key" placeholder="标题（如：喜欢的食物）">
         <input class="form-input" id="mem-val" placeholder="内容">
+      </div>
+      <div class="form-row">
+        <select class="form-input" id="mem-type" style="flex:0 0 100px">
+          <option value="dynamic">动态</option>
+          <option value="permanent">长期</option>
+          <option value="feel">感受</option>
+        </select>
+        <input class="form-input" id="mem-importance" type="number" min="1" max="10" value="5" placeholder="重要度1-10" style="flex:0 0 80px">
         <button class="form-btn primary" onclick="addMemory()">添加</button>
       </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ── Injection Editor Modal ── -->
+<div class="modal-overlay" id="modal-injection-editor">
+<div class="modal">
+  <button class="modal-close" onclick="closeModal('modal-injection-editor')">✕</button>
+  <h2 id="injection-editor-title">💉 新增 Prompt 注入</h2>
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div class="form-group">
+      <label class="form-label">名称</label>
+      <input class="form-input" id="inj-name" placeholder="例如：强调角色规则">
+    </div>
+    <div class="form-group">
+      <label class="form-label">注入位置</label>
+      <select class="form-input" id="inj-position">
+        <option value="system_top">角色卡之前（全局最高优先）</option>
+        <option value="system_bottom" selected>系统末尾（常规扩展）</option>
+        <option value="before_last_user">用户最后消息之前（场景注入）</option>
+        <option value="after_last_user">用户最后消息之后（即时指令，影响力最强）</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">内容</label>
+      <textarea class="form-input" id="inj-content" rows="6" placeholder="输入要注入的 prompt 内容..."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">优先级（数字越小越靠前）</label>
+      <input class="form-input" id="inj-priority" type="number" value="0">
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">启用</span>
+      <label class="toggle"><input type="checkbox" id="inj-enabled" checked><span class="toggle-slider"></span></label>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="form-btn primary" onclick="saveInjection()" style="flex:1">保存</button>
+      <button class="form-btn" onclick="closeModal('modal-injection-editor')" style="flex:1">取消</button>
     </div>
   </div>
 </div>
@@ -912,12 +1184,22 @@ async function loadSettings() {
     f('s-context-rounds', settings.context_rounds ?? 20);
     f('s-proactive-interval', settings.proactive_interval_minutes ?? 20);
     f('s-proactive-idle', settings.proactive_idle_minutes ?? 15);
+    f('s-proactive-prompt', settings.proactive_prompt || '');
+    f('s-analysis-threshold', settings.analysis_threshold ?? 8000);
+    // Memory engine settings
+    f('s-memory-engine', settings.memory_engine || 'simple');
+    f('s-ombre-buckets-dir', settings.ombre_buckets_dir || './ombre_buckets');
+    f('s-ombre-vector-db', settings.ombre_vector_db || './ombre_buckets/vectors.db');
+    f('s-ombre-decay-interval', settings.ombre_decay_interval ?? 24);
+    f('s-ombre-archive-threshold', settings.ombre_archive_threshold ?? 0.3);
+    f('s-emotion-system', settings.emotion_system || 'occ');
     const cb = (id, val) => { const el = document.getElementById(id); if(el) el.checked = !!val; };
     cb('s-l2d-enabled', settings.live2d_enabled);
     cb('s-l2d-eye', settings.live2d_eye_tracking);
     cb('s-l2d-breath', settings.live2d_breathing);
     cb('s-l2d-ai', settings.live2d_ai_control);
     cb('s-proactive-visible', settings.proactive_require_page_visible !== false);
+    cb('s-ombre-decay-enabled', settings.ombre_decay_enabled !== false);
     // Desktop notification
     desktopNotifEnabled = !!settings.desktop_notif_enabled;
     cb('s-desktop-notif', desktopNotifEnabled);
@@ -925,6 +1207,8 @@ async function loadSettings() {
     // typing indicator avatar
     const ta = document.querySelector('#typing .avatar-placeholder');
     if (ta) ta.textContent = settings.ai_avatar ? '' : '涟';
+    // Update memory engine UI
+    onMemoryEngineChange();
   } catch(e) { console.warn('loadSettings:', e); }
 }
 
@@ -996,6 +1280,47 @@ async function testProactive() {
   }
 }
 
+async function refreshProactiveStatus() {
+  const box = document.getElementById('proactive-status-box');
+  box.style.display = 'block';
+  box.textContent = '加载中...';
+  try {
+    const r = await fetch('/api/proactive-status');
+    const d = await r.json();
+
+    // 格式化时间戳
+    const formatTime = (isoStr) => {
+      if (!isoStr) return '从未';
+      try {
+        const date = new Date(isoStr);
+        const now = new Date();
+        const diff = Math.floor((now - date) / 1000);
+        if (diff < 60) return `${diff}秒前`;
+        if (diff < 3600) return `${Math.floor(diff / 60)}分钟前`;
+        if (diff < 86400) return `${Math.floor(diff / 3600)}小时前`;
+        return date.toLocaleString('zh-CN', {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'});
+      } catch(e) {
+        return isoStr;
+      }
+    };
+
+    const lines = [
+      `SSE 客户端已连接:  ${d.sse_client_connected ? '✅' : '❌'}`,
+      `页面可见:          ${d.page_visible ? '✅' : '❌'}`,
+      `API 已配置:        ${d.api_configured ? '✅' : '❌'}`,
+      `冷却剩余:          ${d.cooldown_remaining_secs} 秒`,
+      `用户空闲时长:      ${d.idle_secs >= 0 ? d.idle_secs + ' 秒' : '未知'}`,
+      `空闲阈值:          ${d.idle_threshold_secs} 秒`,
+      `空闲条件满足:      ${d.idle_satisfied ? '✅' : '❌'}`,
+      `上次主动消息:      ${formatTime(d.last_proactive_time)}`,
+      `上次用户消息:      ${formatTime(d.last_user_message_time)}`,
+    ];
+    box.textContent = lines.join('\n');
+  } catch(e) {
+    box.textContent = '获取失败: ' + e.message;
+  }
+}
+
 async function saveSettings() {
   const g = id => document.getElementById(id)?.value || '';
   const gc = id => document.getElementById(id)?.checked || false;
@@ -1022,7 +1347,16 @@ async function saveSettings() {
     proactive_require_page_visible: gc('s-proactive-visible'),
     proactive_interval_minutes: parseInt(g('s-proactive-interval')) || 20,
     proactive_idle_minutes: parseInt(g('s-proactive-idle')) || 15,
+    proactive_prompt: g('s-proactive-prompt'),
+    analysis_threshold: parseInt(g('s-analysis-threshold')) || 8000,
     desktop_notif_enabled: gc('s-desktop-notif'),
+    memory_engine: g('s-memory-engine'),
+    ombre_buckets_dir: g('s-ombre-buckets-dir'),
+    ombre_vector_db: g('s-ombre-vector-db'),
+    ombre_decay_enabled: gc('s-ombre-decay-enabled'),
+    ombre_decay_interval: parseInt(g('s-ombre-decay-interval')) || 24,
+    ombre_archive_threshold: parseFloat(g('s-ombre-archive-threshold')) || 0.3,
+    emotion_system: g('s-emotion-system'),
   };
   try {
     const r = await fetch('/api/settings', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(updated)});
@@ -1153,9 +1487,70 @@ function renderMessages(scrollBottom) {
     if (info) info.textContent = displayMsgs.length > 0 ? `${displayMsgs.length} 条` : '无结果';
   }
 
-  // Render with time dividers
+  // Auto-fold old messages (older than 30 rounds = 60 messages)
+  const FOLD_THRESHOLD = 60;
+  let oldMsgs = [];
+  let recentMsgs = [];
+  if (!searchQuery && displayMsgs.length > FOLD_THRESHOLD) {
+    oldMsgs = displayMsgs.slice(0, displayMsgs.length - FOLD_THRESHOLD);
+    recentMsgs = displayMsgs.slice(displayMsgs.length - FOLD_THRESHOLD);
+  } else {
+    recentMsgs = displayMsgs;
+  }
+
+  // Render old messages in collapsible section
+  if (oldMsgs.length > 0) {
+    const foldBtn = document.createElement('div');
+    foldBtn.className = 'fold-toggle';
+    foldBtn.innerHTML = `<span id="fold-icon">▶</span> 已折叠 ${oldMsgs.length} 条早期消息 <span style="font-size:11px;color:var(--text3)">(点击展开)</span>`;
+    foldBtn.onclick = () => {
+      const foldContainer = document.getElementById('folded-messages');
+      const icon = document.getElementById('fold-icon');
+      if (foldContainer.style.display === 'none') {
+        foldContainer.style.display = 'block';
+        icon.textContent = '▼';
+      } else {
+        foldContainer.style.display = 'none';
+        icon.textContent = '▶';
+      }
+    };
+    container.appendChild(foldBtn);
+
+    const foldContainer = document.createElement('div');
+    foldContainer.id = 'folded-messages';
+    foldContainer.style.display = 'none';
+    container.appendChild(foldContainer);
+
+    let lastTs = null;
+    oldMsgs.forEach(({ msg, idx }) => {
+      if (msg.ts != null) {
+        if (lastTs === null || msg.ts - lastTs > 5 * 60 * 1000) {
+          const divider = document.createElement('div');
+          divider.className = 'time-divider';
+          divider.textContent = formatDividerTime(msg.ts);
+          foldContainer.appendChild(divider);
+        }
+        lastTs = msg.ts;
+      }
+      // Split user messages by newlines when rendering from history
+      if (msg.role === 'user' && typeof msg.content === 'string' && msg.content.includes('\n')) {
+        const lines = msg.content.split('\n').filter(l => l.trim());
+        if (lines.length > 1) {
+          for (const line of lines) {
+            renderOneMessage({ ...msg, content: line }, idx, foldContainer, searchQuery);
+          }
+        } else {
+          renderOneMessage(msg, idx, foldContainer, searchQuery);
+        }
+      } else {
+        renderOneMessage(msg, idx, foldContainer, searchQuery);
+      }
+    });
+  }
+
+  // Render recent messages with time dividers
   let lastTs = null;
-  displayMsgs.forEach(({ msg, idx }) => {
+  recentMsgs.forEach(({ msg, idx }) => {
     if (!searchQuery && msg.ts != null) {
       if (lastTs === null || msg.ts - lastTs > 5 * 60 * 1000) {
         const divider = document.createElement('div');
@@ -1165,7 +1560,19 @@ function renderMessages(scrollBottom) {
       }
       lastTs = msg.ts;
     }
-    renderOneMessage(msg, idx, container, searchQuery);
+    // Split user messages by newlines when rendering from history
+    if (msg.role === 'user' && typeof msg.content === 'string' && msg.content.includes('\n')) {
+      const lines = msg.content.split('\n').filter(l => l.trim());
+      if (lines.length > 1) {
+        for (const line of lines) {
+          renderOneMessage({ ...msg, content: line }, idx, container, searchQuery);
+        }
+      } else {
+        renderOneMessage(msg, idx, container, searchQuery);
+      }
+    } else {
+      renderOneMessage(msg, idx, container, searchQuery);
+    }
   });
 
   if (scrollBottom) container.scrollTop = container.scrollHeight;
@@ -1201,9 +1608,9 @@ function renderOneMessage(msg, idx, container, query) {
   const actions = document.createElement('div');
   actions.className = 'msg-actions';
   if (isUser) {
-    actions.innerHTML = `<button class="act-btn" onclick="editMessage(${idx})">✏ 编辑</button><button class="act-btn danger" onclick="deleteMessage(${idx})">✕</button>`;
+    actions.innerHTML = `<button class="act-btn" onclick="quoteMessage(${idx})">💬 引用</button><button class="act-btn" onclick="editMessage(${idx})">✏ 编辑</button><button class="act-btn danger" onclick="deleteMessage(${idx})">✕</button>`;
   } else {
-    actions.innerHTML = `<button class="act-btn" onclick="editMessage(${idx})">✏ 编辑</button><button class="act-btn" onclick="retryMessage(${idx})">↺ 重试</button><button class="act-btn danger" onclick="deleteMessage(${idx})">✕</button>`;
+    actions.innerHTML = `<button class="act-btn" onclick="quoteMessage(${idx})">💬 引用</button><button class="act-btn" onclick="editMessage(${idx})">✏ 编辑</button><button class="act-btn" onclick="retryMessage(${idx})">↺ 重试</button><button class="act-btn danger" onclick="deleteMessage(${idx})">✕</button>`;
   }
 
   // Bubble
@@ -1357,16 +1764,31 @@ async function sendMessage() {
     return;
   }
 
-  // Build user message
+  // Build user message (store complete text for API)
   const userMsg = {
     role: 'user',
     content: text,
     time: nowTime(),
     ts: Date.now(),
-    imgB64: pendingImageB64 || undefined
+    imgB64: pendingImageB64 || undefined,
+    quotedText: _quotedMsg ? _quotedMsg.text : null,
+    quotedRole: _quotedMsg ? _quotedMsg.role : null
   };
   messages.push(userMsg);
-  appendMessage(userMsg);
+
+  // Render as multiple bubbles if text contains newlines
+  const lines = text.split('\n').filter(l => l.trim());
+  if (lines.length > 1) {
+    // Multi-line: render each line as separate bubble
+    for (const line of lines) {
+      appendMessage({ ...userMsg, content: line });
+    }
+  } else {
+    // Single line: render normally
+    appendMessage(userMsg);
+  }
+
+  clearQuote();
   pendingImageB64 = null;
   input.value = '';
   input.style.height = 'auto';
@@ -1422,6 +1844,13 @@ async function callAI() {
     if (awayNotice) { body.away_notice = awayNotice; awayNotice = ''; _awayDividerShown = false; }
     const actCtx = buildActivityContext();
     if (actCtx) body.activity_context = actCtx;
+
+    // Add quote info if present (from last user message)
+    const lastUserMsg = messages.filter(m => m.role === 'user').pop();
+    if (lastUserMsg && lastUserMsg.quotedText) {
+      body.quoted_text = lastUserMsg.quotedText;
+      body.quoted_role = lastUserMsg.quotedRole || 'assistant';
+    }
 
     const r = await fetch('/api/chat', {
       method: 'POST',
@@ -1608,6 +2037,33 @@ function deleteMessage(idx) {
   saveHistory();
 }
 
+// ══════════════════════════════════════════
+//  Quote Message
+// ══════════════════════════════════════════
+let _quotedMsg = null;
+
+function quoteMessage(idx) {
+  const msg = messages[idx];
+  if (!msg) return;
+  const content = typeof msg.content === 'string' ? msg.content : '';
+  const role = msg.role;
+  setQuote(content, role);
+}
+
+function setQuote(content, role) {
+  _quotedMsg = { text: content, role };
+  const preview = content.length > 80 ? content.slice(0, 80) + '…' : content;
+  document.getElementById('quote-text-preview').textContent = preview;
+  document.getElementById('quote-role-label').textContent = role === 'user' ? (settings.user_name || '你') : '涟宗也';
+  document.getElementById('quote-preview').style.display = 'flex';
+  document.getElementById('msg-input').focus();
+}
+
+function clearQuote() {
+  _quotedMsg = null;
+  document.getElementById('quote-preview').style.display = 'none';
+}
+
 function retryMessage(idx) {
   // Remove this AI message and re-call
   messages = messages.slice(0, idx);
@@ -1694,52 +2150,286 @@ async function confirmClear() {
 // ══════════════════════════════════════════
 //  Memory
 // ══════════════════════════════════════════
+let _memoryData = {};
+let _memoryFilter = 'all';
+
 async function loadMemory() {
   try {
     const r = await fetch('/api/memory');
     if (!r.ok) throw new Error();
-    const data = await r.json();
-    const list = document.getElementById('mem-list');
-    if (!Object.keys(data).length) { list.innerHTML = '<div style="color:var(--text3);font-size:12px">暂无记忆</div>'; return; }
-    list.innerHTML = Object.entries(data).map(([k,v]) => `
-      <div class="mem-item">
-        <div class="mem-key">${k}</div>
-        <div class="mem-val">${v.value}</div>
-        <div class="mem-time">${v.time||''}</div>
-        <button class="mem-del" onclick="deleteMemory('${k}')">✕</button>
-      </div>`).join('');
+    _memoryData = await r.json();
+    renderMemory();
   } catch(e) { notify('加载记忆失败', true); }
+}
+
+function filterMemory(type) {
+  _memoryFilter = type;
+  document.querySelectorAll('.mem-filter-tab').forEach(el => {
+    el.classList.toggle('active', el.dataset.filter === type);
+  });
+  renderMemory();
+}
+
+function renderMemory() {
+  const list = document.getElementById('mem-list');
+  if (!Object.keys(_memoryData).length) {
+    list.innerHTML = '<div style="color:var(--text3);font-size:12px">暂无记忆</div>';
+    return;
+  }
+
+  // 计算衰减分数（前端简化版，仅用于排序）
+  const calcScore = (entry) => {
+    const t = entry.type || 'dynamic';
+    if (entry.pinned || t === 'permanent') return 999;
+    if (t === 'feel') return 50;
+    if (t === 'archived') return 0;
+    const importance = entry.importance || 5;
+    const activationCount = Math.max(1, entry.activation_count || 0);
+    return importance * Math.pow(activationCount, 0.3);
+  };
+
+  // 过滤和排序
+  let entries = Object.entries(_memoryData)
+    .map(([k, v]) => ({ key: k, ...v, score: calcScore(v) }));
+
+  if (_memoryFilter !== 'all') {
+    entries = entries.filter(e => e.type === _memoryFilter);
+  }
+
+  entries.sort((a, b) => b.score - a.score);
+
+  if (!entries.length) {
+    list.innerHTML = '<div style="color:var(--text3);font-size:12px">该类型暂无记忆</div>';
+    return;
+  }
+
+  list.innerHTML = entries.map(entry => {
+    const type = entry.type || 'dynamic';
+    const importance = entry.importance || 5;
+    const valence = entry.valence ?? 0.5;
+    const arousal = entry.arousal ?? 0.3;
+    const activationCount = entry.activation_count || 0;
+    const resolved = entry.resolved ? '已释怀' : '';
+    const pinned = entry.pinned;
+    const tags = entry.tags || [];
+
+    const typeLabel = {
+      dynamic: '动态',
+      permanent: '长期',
+      feel: '感受',
+      archived: '归档'
+    }[type] || type;
+
+    const itemClass = `mem-item ${type === 'archived' ? 'archived' : ''} ${pinned ? 'pinned' : ''}`;
+
+    const emotionIcon = valence > 0.6 ? '😊' : valence < 0.4 ? '😔' : '😐';
+    const arousalIcon = arousal > 0.7 ? '⚡' : arousal < 0.3 ? '💤' : '🔆';
+
+    return `
+      <div class="${itemClass}">
+        <div class="mem-header">
+          <div class="mem-key">${escHtml(entry.key)}</div>
+          <span class="mem-type-badge mem-type-${type}">${typeLabel}</span>
+          ${pinned ? '<span style="font-size:11px">📌</span>' : ''}
+        </div>
+        <div class="mem-val">${escHtml(entry.value)}</div>
+        <div class="mem-meta">
+          <span class="mem-meta-item"><span class="icon">⭐</span>重要度 ${importance}</span>
+          <span class="mem-meta-item"><span class="icon">${emotionIcon}</span>效价 ${valence.toFixed(2)}</span>
+          <span class="mem-meta-item"><span class="icon">${arousalIcon}</span>唤醒 ${arousal.toFixed(2)}</span>
+          <span class="mem-meta-item"><span class="icon">🔄</span>激活 ${activationCount.toFixed(1)}</span>
+          <span class="mem-meta-item"><span class="icon">📊</span>活跃度 <span class="mem-score">${entry.score.toFixed(1)}</span></span>
+          ${resolved ? '<span class="mem-meta-item" style="color:var(--accent2)">✓ 已释怀</span>' : ''}
+          ${tags.length ? `<span class="mem-meta-item">🏷 ${tags.join(', ')}</span>` : ''}
+          <span class="mem-meta-item" style="margin-left:auto">${entry.time || ''}</span>
+        </div>
+        <div class="mem-actions">
+          ${type === 'archived' ? `<button class="mem-btn" onclick="restoreMemory('${escHtml(entry.key)}')">恢复</button>` : ''}
+          <button class="mem-btn danger" onclick="deleteMemory('${escHtml(entry.key)}')">删除</button>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 async function addMemory() {
   const k = document.getElementById('mem-key').value.trim();
   const v = document.getElementById('mem-val').value.trim();
+  const type = document.getElementById('mem-type').value;
+  const importance = parseInt(document.getElementById('mem-importance').value) || 5;
   if (!k || !v) return;
   try {
-    await fetch('/api/memory', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key:k,value:v})});
+    await fetch('/api/memory', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({key:k, value:v, importance, type})
+    });
     document.getElementById('mem-key').value = '';
     document.getElementById('mem-val').value = '';
+    document.getElementById('mem-importance').value = '5';
     loadMemory();
     notify('已添加记忆');
   } catch(e) { notify('添加失败', true); }
 }
 
 async function deleteMemory(key) {
+  if (!confirm(`确定删除记忆「${key}」吗？`)) return;
   try {
     await fetch(`/api/memory/${encodeURIComponent(key)}`, {method:'DELETE'});
     loadMemory();
-  } catch(e) {}
+    notify('已删除');
+  } catch(e) { notify('删除失败', true); }
+}
+
+async function restoreMemory(key) {
+  try {
+    await fetch(`/api/memory/${encodeURIComponent(key)}/restore`, {method:'POST'});
+    loadMemory();
+    notify('已恢复记忆');
+  } catch(e) { notify('恢复失败', true); }
 }
 
 async function exportMemory() {
   try {
     const r = await fetch('/api/memory/export');
-    const blob = await r.blob();
+    const data = await r.json();
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'memory_export.json';
+    const ts = new Date().toISOString().slice(0,10);
+    a.download = `memory_export_${ts}.json`;
     a.click();
+    URL.revokeObjectURL(a.href);
+    notify('已导出记忆');
   } catch(e) { notify('导出失败', true); }
+}
+
+// ══════════════════════════════════════════
+//  Prompt Injections
+// ══════════════════════════════════════════
+let _currentInjectionId = null;
+
+async function loadInjections() {
+  try {
+    const r = await fetch('/api/injections');
+    const items = await r.json();
+    const container = document.getElementById('injections-list');
+    if (items.length === 0) {
+      container.innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px">暂无注入条目</div>';
+      return;
+    }
+    container.innerHTML = items.map(item => {
+      const posLabels = {
+        'system_top': '角色卡之前',
+        'system_bottom': '系统末尾',
+        'before_last_user': '用户消息前',
+        'after_last_user': '用户消息后'
+      };
+      const posLabel = posLabels[item.position] || item.position;
+      const enabledIcon = item.enabled ? '●' : '○';
+      const enabledColor = item.enabled ? 'var(--accent)' : 'var(--text3)';
+      return `
+        <div style="border:1px solid var(--border);border-radius:8px;padding:12px;background:var(--bg3)">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                <span style="color:${enabledColor};font-size:16px">${enabledIcon}</span>
+                <span style="font-weight:500;color:var(--text)">${escHtml(item.name)}</span>
+                <span style="font-size:11px;color:var(--text3);background:var(--bg);padding:2px 6px;border-radius:4px">${posLabel}</span>
+                <span style="font-size:11px;color:var(--text3)">优先级: ${item.priority}</span>
+              </div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.5;max-height:60px;overflow:hidden">${escHtml(item.content).slice(0, 150)}${item.content.length > 150 ? '...' : ''}</div>
+            </div>
+            <div style="display:flex;gap:4px;margin-left:12px">
+              <button class="form-btn" onclick="openInjectionEditor('${item.id}')" style="font-size:11px;padding:4px 8px">编辑</button>
+              <button class="form-btn danger" onclick="deleteInjection('${item.id}')" style="font-size:11px;padding:4px 8px">删除</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch(e) {
+    console.error('loadInjections:', e);
+    notify('加载注入条目失败', true);
+  }
+}
+
+async function openInjectionEditor(id) {
+  _currentInjectionId = id;
+  const title = document.getElementById('injection-editor-title');
+  if (id) {
+    title.textContent = '💉 编辑 Prompt 注入';
+    try {
+      const r = await fetch('/api/injections');
+      const items = await r.json();
+      const item = items.find(i => i.id === id);
+      if (item) {
+        document.getElementById('inj-name').value = item.name;
+        document.getElementById('inj-position').value = item.position;
+        document.getElementById('inj-content').value = item.content;
+        document.getElementById('inj-priority').value = item.priority;
+        document.getElementById('inj-enabled').checked = item.enabled;
+      }
+    } catch(e) {
+      notify('加载失败', true);
+      return;
+    }
+  } else {
+    title.textContent = '💉 新增 Prompt 注入';
+    document.getElementById('inj-name').value = '';
+    document.getElementById('inj-position').value = 'system_bottom';
+    document.getElementById('inj-content').value = '';
+    document.getElementById('inj-priority').value = '0';
+    document.getElementById('inj-enabled').checked = true;
+  }
+  openModal('modal-injection-editor');
+}
+
+async function saveInjection() {
+  const name = document.getElementById('inj-name').value.trim();
+  const content = document.getElementById('inj-content').value.trim();
+  if (!name || !content) {
+    notify('名称和内容不能为空', true);
+    return;
+  }
+  const data = {
+    name,
+    content,
+    position: document.getElementById('inj-position').value,
+    priority: parseInt(document.getElementById('inj-priority').value) || 0,
+    enabled: document.getElementById('inj-enabled').checked
+  };
+  try {
+    if (_currentInjectionId) {
+      await fetch(`/api/injections/${_currentInjectionId}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      });
+      notify('已更新');
+    } else {
+      await fetch('/api/injections', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      });
+      notify('已添加');
+    }
+    closeModal('modal-injection-editor');
+    loadInjections();
+  } catch(e) {
+    notify('保存失败', true);
+  }
+}
+
+async function deleteInjection(id) {
+  if (!confirm('确定删除此注入条目吗？')) return;
+  try {
+    await fetch(`/api/injections/${id}`, {method: 'DELETE'});
+    loadInjections();
+    notify('已删除');
+  } catch(e) {
+    notify('删除失败', true);
+  }
 }
 
 let searchQuery = '';
@@ -1757,6 +2447,14 @@ function toggleL2D() {
 function onL2DToggle() {
   const enabled = document.getElementById('s-l2d-enabled').checked;
   document.getElementById('l2d-extra').style.opacity = enabled ? 1 : .4;
+}
+
+function onMemoryEngineChange() {
+  const engine = document.getElementById('s-memory-engine')?.value || 'simple';
+  const ombreSettings = document.getElementById('ombre-settings');
+  if (ombreSettings) {
+    ombreSettings.style.display = engine === 'ombre' ? 'block' : 'none';
+  }
 }
 
 function toggleL2DFeature(feat, el) {
@@ -1818,6 +2516,12 @@ function openModal(id) {
   document.getElementById(id).classList.add('show');
   if (id === 'modal-memory') loadMemory();
   if (id === 'modal-activity') { loadPersistentLog(); logActivity(''); }
+  if (id === 'modal-settings') {
+    const activeTab = document.querySelector('.tab-btn.active');
+    if (activeTab && activeTab.dataset.tab === 'tab-injections') {
+      loadInjections();
+    }
+  }
 }
 
 function closeModal(id) {
@@ -1828,8 +2532,13 @@ function switchTab(el, tabId) {
   const modal = el.closest('.modal');
   modal.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  const allTabs = ['tab-api','tab-user','tab-charcard','tab-compress','tab-proactive','tab-conv','tab-live2d'];
+  const allTabs = ['tab-api','tab-user','tab-charcard','tab-memory','tab-compress','tab-proactive','tab-conv','tab-live2d','tab-injections'];
   allTabs.forEach(t => { const el2 = document.getElementById(t); if(el2) el2.style.display = t===tabId?'':'none'; });
+
+  // Load injections when switching to injections tab
+  if (tabId === 'tab-injections') {
+    loadInjections();
+  }
 }
 
 function showImgOverlay(src) {

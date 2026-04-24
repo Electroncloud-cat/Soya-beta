@@ -437,6 +437,7 @@ body.light mark.search-highlight{background:rgba(90,154,184,.3);color:var(--text
     <div class="tab active" onclick="switchTab(this,'tab-api')">API</div>
     <div class="tab" onclick="switchTab(this,'tab-user')">用户</div>
     <div class="tab" onclick="switchTab(this,'tab-charcard')">角色卡</div>
+    <div class="tab" onclick="switchTab(this,'tab-emotion')">💗 情感</div>
     <div class="tab" onclick="switchTab(this,'tab-compress')">压缩</div>
     <div class="tab" onclick="switchTab(this,'tab-proactive')">主动消息</div>
     <div class="tab" onclick="switchTab(this,'tab-conv')">对话</div>
@@ -524,6 +525,109 @@ body.light mark.search-highlight{background:rgba(90,154,184,.3);color:var(--text
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="form-btn primary" onclick="saveSettings()">保存</button>
       <button class="form-btn" onclick="resetCharCard()">恢复默认</button>
+    </div>
+  </div>
+
+  <!-- Emotion Tab -->
+  <div id="tab-emotion" style="display:none">
+    <div style="background:rgba(126,184,212,.08);border:1px solid rgba(126,184,212,.2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--text2);line-height:1.6">
+      💡 <b>情感系统说明：</b>情感值每分钟自动更新，在你发送消息或触发"主动对话"时注入到AI的prompt中。所有描述文字由AI根据数值自己生成。
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">情感Prompt模板 - 标题</label>
+      <input class="form-input" id="s-emotion-header" placeholder="【宗也当前内部状态——仅作行为参考，请勿在回复中提及任何数字】">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">情感Prompt模板 - AI任务描述</label>
+      <textarea class="form-input" id="s-emotion-ai-task" rows="6" placeholder="请在内心根据以上数值，为自己生成当前的：&#10;1. 亲密阶段（如：陌生人/初识/熟人/朋友/亲密/深度依赖等）&#10;2. 情感倾向（如：冷淡/警惕/好奇/温和/依恋/占有欲等）&#10;3. 当前心境（用一句话概括你此刻的内心感受）"></textarea>
+      <div class="form-hint">这段文字告诉AI如何根据数值生成情感描述</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">情感Prompt模板 - 行为指引</label>
+      <textarea class="form-input" id="s-emotion-instruction" rows="4" placeholder="这些描述仅供你内心参考，不要在回复中明说。&#10;根据这些内在状态，以涟宗也的方式自然地在回复中体现出来。"></textarea>
+      <div class="form-hint">这段文字告诉AI如何在对话中体现情感</div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px">
+      <div class="form-label" style="margin-bottom:10px">初始情感数值（0.0 - 1.0，affection为0-100）</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">孤独感 loneliness</label>
+          <input class="form-input" id="s-emotion-loneliness" type="number" step="0.01" min="0" max="1" value="0.15">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">亲密感 intimacy</label>
+          <input class="form-input" id="s-emotion-intimacy" type="number" step="0.01" min="0" max="1" value="0.05">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">兴奋程度 excitement</label>
+          <input class="form-input" id="s-emotion-excitement" type="number" step="0.01" min="0" max="1" value="0.05">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">烦躁感 irritation</label>
+          <input class="form-input" id="s-emotion-irritation" type="number" step="0.01" min="0" max="1" value="0.30">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">好奇心 curiosity</label>
+          <input class="form-input" id="s-emotion-curiosity" type="number" step="0.01" min="0" max="1" value="0.20">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">淡淡忧郁 melancholy</label>
+          <input class="form-input" id="s-emotion-melancholy" type="number" step="0.01" min="0" max="1" value="0.55">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">亲密度 affection (0-100)</label>
+          <input class="form-input" id="s-emotion-affection" type="number" step="0.1" min="0" max="100" value="3.0">
+        </div>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px">
+      <div class="form-label" style="margin-bottom:10px">衰减系数（AI会根据对话自动调整）</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px">
+        <div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">离开时孤独感增长/小时</label>
+          <input class="form-input" id="s-coeff-loneliness-away" type="number" step="0.01" min="0.02" max="0.20" value="0.08">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">静默时孤独感增长/小时</label>
+          <input class="form-input" id="s-coeff-loneliness-idle" type="number" step="0.01" min="0.01" max="0.08" value="0.03">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">亲密感衰减/小时</label>
+          <input class="form-input" id="s-coeff-intimacy-decay" type="number" step="0.001" min="0.002" max="0.03" value="0.010">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">兴奋衰减/小时</label>
+          <input class="form-input" id="s-coeff-excitement-decay" type="number" step="0.01" min="0.05" max="0.30" value="0.15">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">烦躁平复/小时</label>
+          <input class="form-input" id="s-coeff-irritation-decay" type="number" step="0.01" min="0.01" max="0.12" value="0.05">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">好奇心消退/小时</label>
+          <input class="form-input" id="s-coeff-curiosity-decay" type="number" step="0.01" min="0.02" max="0.15" value="0.08">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">亲密度流失/天（离开超阈值后）</label>
+          <input class="form-input" id="s-coeff-affection-loss" type="number" step="0.1" min="0.2" max="3.0" value="1.0">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">亲密度流失阈值/小时</label>
+          <input class="form-input" id="s-coeff-affection-threshold" type="number" step="0.5" min="2.0" max="12.0" value="6.0">
+        </div>
+      </div>
+      <div class="form-hint" style="margin-top:8px">💡 这些系数会被AI根据对话模式和情感状态自动微调</div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="form-btn primary" onclick="saveEmotionSettings()">保存情感配置</button>
+      <button class="form-btn" onclick="resetEmotionSettings()">恢复默认</button>
+      <button class="form-btn" onclick="loadEmotionSettings()">重新加载</button>
     </div>
   </div>
 
@@ -925,6 +1029,8 @@ async function loadSettings() {
     // typing indicator avatar
     const ta = document.querySelector('#typing .avatar-placeholder');
     if (ta) ta.textContent = settings.ai_avatar ? '' : '涟';
+    // Load emotion settings
+    loadEmotionSettings();
   } catch(e) { console.warn('loadSettings:', e); }
 }
 
@@ -2327,6 +2433,139 @@ function importEmotionConfig(input) {
   input.value = ''; // 允许重复导入同一文件
 
 }
+
+// ══════════════════════════════════════════
+//  Emotion Settings (in Settings Modal)
+// ══════════════════════════════════════════
+async function loadEmotionSettings() {
+  try {
+    const r = await fetch('/api/emotion');
+    const state = await r.json();
+
+    // Load prompt template from settings
+    const s = settings.emotion_prompt_template || {};
+    document.getElementById('s-emotion-header').value = s.header || '';
+    document.getElementById('s-emotion-ai-task').value = s.ai_task || '';
+    document.getElementById('s-emotion-instruction').value = s.instruction || '';
+
+    // Load values
+    const v = state.values || {};
+    document.getElementById('s-emotion-loneliness').value = v.loneliness || 0.15;
+    document.getElementById('s-emotion-intimacy').value = v.intimacy || 0.05;
+    document.getElementById('s-emotion-excitement').value = v.excitement || 0.05;
+    document.getElementById('s-emotion-irritation').value = v.irritation || 0.30;
+    document.getElementById('s-emotion-curiosity').value = v.curiosity || 0.20;
+    document.getElementById('s-emotion-melancholy').value = v.melancholy || 0.55;
+    document.getElementById('s-emotion-affection').value = v.affection || 3.0;
+
+    // Load coefficients
+    const c = state.coefficients || {};
+    document.getElementById('s-coeff-loneliness-away').value = c.loneliness_per_hour_away || 0.08;
+    document.getElementById('s-coeff-loneliness-idle').value = c.loneliness_per_hour_idle || 0.03;
+    document.getElementById('s-coeff-intimacy-decay').value = c.intimacy_decay_per_hour || 0.010;
+    document.getElementById('s-coeff-excitement-decay').value = c.excitement_decay_per_hour || 0.15;
+    document.getElementById('s-coeff-irritation-decay').value = c.irritation_decay_per_hour || 0.05;
+    document.getElementById('s-coeff-curiosity-decay').value = c.curiosity_decay_per_hour || 0.08;
+    document.getElementById('s-coeff-affection-loss').value = c.affection_away_loss_per_day || 1.0;
+    document.getElementById('s-coeff-affection-threshold').value = c.affection_loss_threshold_hours || 6.0;
+
+    notify('情感配置已加载');
+  } catch(e) {
+    notify('加载失败: ' + e.message);
+  }
+}
+
+async function saveEmotionSettings() {
+  try {
+    // Save prompt template to settings
+    const template = {
+      header: document.getElementById('s-emotion-header').value,
+      ai_task: document.getElementById('s-emotion-ai-task').value,
+      instruction: document.getElementById('s-emotion-instruction').value
+    };
+
+    await fetch('/api/emotion/prompt-template', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({template})
+    });
+
+    // Save values and coefficients
+    const values = {
+      loneliness: parseFloat(document.getElementById('s-emotion-loneliness').value),
+      intimacy: parseFloat(document.getElementById('s-emotion-intimacy').value),
+      excitement: parseFloat(document.getElementById('s-emotion-excitement').value),
+      irritation: parseFloat(document.getElementById('s-emotion-irritation').value),
+      curiosity: parseFloat(document.getElementById('s-emotion-curiosity').value),
+      melancholy: parseFloat(document.getElementById('s-emotion-melancholy').value),
+      affection: parseFloat(document.getElementById('s-emotion-affection').value)
+    };
+
+    const coefficients = {
+      loneliness_per_hour_away: parseFloat(document.getElementById('s-coeff-loneliness-away').value),
+      loneliness_per_hour_idle: parseFloat(document.getElementById('s-coeff-loneliness-idle').value),
+      intimacy_decay_per_hour: parseFloat(document.getElementById('s-coeff-intimacy-decay').value),
+      excitement_decay_per_hour: parseFloat(document.getElementById('s-coeff-excitement-decay').value),
+      irritation_decay_per_hour: parseFloat(document.getElementById('s-coeff-irritation-decay').value),
+      curiosity_decay_per_hour: parseFloat(document.getElementById('s-coeff-curiosity-decay').value),
+      affection_away_loss_per_day: parseFloat(document.getElementById('s-coeff-affection-loss').value),
+      affection_loss_threshold_hours: parseFloat(document.getElementById('s-coeff-affection-threshold').value)
+    };
+
+    await fetch('/api/emotion', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({values, coefficients})
+    });
+
+    notify('情感配置已保存');
+    loadEmotionState(); // Refresh emotion panel if open
+  } catch(e) {
+    notify('保存失败: ' + e.message);
+  }
+}
+
+async function resetEmotionSettings() {
+  if (!confirm('确定要恢复所有情感配置到默认值吗？')) return;
+
+  // Reset to defaults
+  document.getElementById('s-emotion-header').value = '';
+  document.getElementById('s-emotion-ai-task').value = '';
+  document.getElementById('s-emotion-instruction').value = '';
+
+  document.getElementById('s-emotion-loneliness').value = 0.15;
+  document.getElementById('s-emotion-intimacy').value = 0.05;
+  document.getElementById('s-emotion-excitement').value = 0.05;
+  document.getElementById('s-emotion-irritation').value = 0.30;
+  document.getElementById('s-emotion-curiosity').value = 0.20;
+  document.getElementById('s-emotion-melancholy').value = 0.55;
+  document.getElementById('s-emotion-affection').value = 3.0;
+
+  document.getElementById('s-coeff-loneliness-away').value = 0.08;
+  document.getElementById('s-coeff-loneliness-idle').value = 0.03;
+  document.getElementById('s-coeff-intimacy-decay').value = 0.010;
+  document.getElementById('s-coeff-excitement-decay').value = 0.15;
+  document.getElementById('s-coeff-irritation-decay').value = 0.05;
+  document.getElementById('s-coeff-curiosity-decay').value = 0.08;
+  document.getElementById('s-coeff-affection-loss').value = 1.0;
+  document.getElementById('s-coeff-affection-threshold').value = 6.0;
+
+  await saveEmotionSettings();
+}
+
+// ══════════════════════════════════════════
+//  Emotion Auto-Update Timer (every 1 minute)
+// ══════════════════════════════════════════
+setInterval(async () => {
+  try {
+    await fetch('/api/emotion/tick', {method: 'POST'});
+    // Silently update emotion state in background
+    // If emotion panel is open, it will refresh automatically
+  } catch(e) {
+    // Ignore errors
+  }
+}, 60000); // 60 seconds
+
 </script>
 </body>
 </html>

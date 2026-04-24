@@ -1,8 +1,19 @@
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 import requests as req
-import json, os, datetime, base64, re, time, queue, threading
-from memory import get_memory_summary, save_memory as mem_save, load_all as mem_load_all, delete_memory as mem_delete
-from emotion import load_state, save_state
+import json, os, datetime, base64, re, time, queue, threading, logging
+from memory import get_memory_summary, save_memory as mem_save, load_all as mem_load_all, delete_memory as mem_delete, get_feel_summary
+from emotion import load_state, save_state, apply_time_based_decay, on_session_start, on_message_received, build_prompt_block
+from analysis_helper import run_analysis
+
+# ─────────────────────────────────────────
+#  Logging
+# ─────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[logging.StreamHandler(), logging.FileHandler('soya.log', encoding='utf-8')]
+)
+logger = logging.getLogger('soya')
 
 app = Flask(__name__)
 
@@ -12,6 +23,7 @@ app = Flask(__name__)
 _sse_clients = []          # list of queue.Queue, one per connected browser tab
 _sse_lock = threading.Lock()
 _last_proactive_time = 0.0  # timestamp of last proactive message sent
+_last_user_message_time = 0.0   # 仅在用户（人类）发消息时更新
 
 def push_sse_event(event_type: str, data: dict):
     """Broadcast an SSE event to every connected client."""
@@ -41,9 +53,13 @@ _last_push_time = 0.0   # 上次前端推送时间戳，用于超时自动离线
 SETTINGS_FILE   = 'settings.json'
 HISTORY_FILE    = 'chat_history.json'
 BOOK_CACHE_FILE = 'book_cache.json'
+INJECTIONS_FILE = 'prompt_injections.json'
 FRONTEND_DIR    = os.path.join(os.path.dirname(__file__), 'frontend')
 AVATAR_DIR      = os.path.join(FRONTEND_DIR, 'avatars')
 os.makedirs(AVATAR_DIR, exist_ok=True)
+
+# Thread lock for analysis
+ANALYSIS_LOCK = threading.Lock()
 
 # Book store — persisted to book_cache.json so it survives server restarts
 def _load_book_cache():
@@ -82,7 +98,15 @@ def load_settings():
         "context_rounds": 20,
         "proactive_require_page_visible": True,
         "proactive_interval_minutes": 20,
-        "proactive_idle_minutes": 15
+        "proactive_idle_minutes": 15,
+        "analysis_threshold": 8000,  # Character count threshold for personality/relationship analysis
+        "memory_engine": "simple",  # simple or ombre
+        "ombre_buckets_dir": "./ombre_buckets",
+        "ombre_vector_db": "./ombre_buckets/vectors.db",
+        "ombre_decay_enabled": True,
+        "ombre_decay_interval": 24,
+        "ombre_archive_threshold": 0.3,
+        "emotion_system": "occ"  # simple or occ
     }
     if os.path.exists(SETTINGS_FILE):
         with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
@@ -97,12 +121,126 @@ def save_settings_file(data):
 def load_history():
     if os.path.exists(HISTORY_FILE):
         with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return {"messages": [], "last_seen": None, "summary": "", "hidden_count": 0}
+            data = json.load(f)
+        # Add default fields for analysis feature
+        if 'personality_summary' not in data:
+            data['personality_summary'] = ''
+        if 'relationship_summary' not in data:
+            data['relationship_summary'] = ''
+        if 'chars_since_last_analysis' not in data:
+            data['chars_since_last_analysis'] = 0
+        return data
+    return {
+        "messages": [],
+        "last_seen": None,
+        "summary": "",
+        "hidden_count": 0,
+        "personality_summary": "",
+        "relationship_summary": "",
+        "chars_since_last_analysis": 0
+    }
 
 def save_history_file(data):
     with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+
+# ─────────────────────────────────────────
+#  Prompt Injections
+# ─────────────────────────────────────────
+def load_injections():
+    """加载 prompt 注入条目"""
+    if os.path.exists(INJECTIONS_FILE):
+        try:
+            with open(INJECTIONS_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return []
+
+def save_injections(data):
+    """保存 prompt 注入条目"""
+    with open(INJECTIONS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+def apply_injections(system: str, messages: list) -> tuple:
+    """将启用的注入条目插入到 system 或 messages 对应位置"""
+    entries = [e for e in load_injections() if e.get('enabled', True)]
+    entries.sort(key=lambda e: e.get('priority', 0))
+
+    tops, bottoms, before_last, after_last = [], [], [], []
+    for e in entries:
+        pos = e.get('position', 'system_bottom')
+        content = e.get('content', '').strip()
+        if not content:
+            continue
+        if pos == 'system_top':
+            tops.append(content)
+        elif pos == 'system_bottom':
+            bottoms.append(content)
+        elif pos == 'before_last_user':
+            before_last.append(content)
+        elif pos == 'after_last_user':
+            after_last.append(content)
+
+    # 拼接 system
+    if tops:
+        system = '\n\n'.join(tops) + '\n\n' + system
+    if bottoms:
+        system = system + '\n\n' + '\n\n'.join(bottoms)
+
+    # 插入 messages
+    msgs = list(messages)
+    # 找最后一条 user 消息的索引
+    last_user_idx = None
+    for i in range(len(msgs) - 1, -1, -1):
+        if msgs[i].get('role') == 'user':
+            last_user_idx = i
+            break
+
+    if last_user_idx is not None:
+        # before_last: 在最后一条 user 消息之前插入
+        for content in reversed(before_last):
+            msgs.insert(last_user_idx, {'role': 'user', 'content': content})
+        # after_last: 在最后一条 user 消息之后插入
+        insert_after = last_user_idx + len(before_last) + 1
+        for content in after_last:
+            msgs.insert(insert_after, {'role': 'user', 'content': content})
+            insert_after += 1
+
+    return system, msgs
+
+# ─────────────────────────────────────────
+#  Personality & Relationship Analysis
+# ─────────────────────────────────────────
+def maybe_trigger_analysis(hist_data):
+    """检查是否需要触发性格/关系分析，超阈值则异步执行"""
+    try:
+        s = load_settings()
+        threshold = s.get('analysis_threshold', 8000)
+
+        # 统计 hidden_count 之后所有消息的字符数
+        msgs = hist_data.get('messages', [])
+        hidden = hist_data.get('hidden_count', 0)
+        recent = msgs[hidden:]
+
+        total_chars = sum(len(str(m.get('content', ''))) for m in recent)
+
+        # 更新字符计数（加锁）
+        with ANALYSIS_LOCK:
+            current_data = load_history()
+            current_data['chars_since_last_analysis'] = total_chars
+            save_history_file(current_data)
+
+        if total_chars >= threshold:
+            logger.info(f"[analysis] 触发分析：{total_chars} 字符 >= {threshold} 阈值")
+            # 启动后台分析线程
+            threading.Thread(
+                target=run_analysis,
+                args=(hist_data, s, load_history, save_history_file, ANALYSIS_LOCK),
+                daemon=True
+            ).start()
+    except Exception as e:
+        logger.error(f"[maybe_trigger_analysis] 异常：{e}")
 
 # ─────────────────────────────────────────
 #  Screenshot helper
@@ -241,6 +379,10 @@ def index():
 def reader():
     return send_from_directory(FRONTEND_DIR, 'reader.html')
 
+@app.route('/help')
+def help_page():
+    return send_from_directory(FRONTEND_DIR, 'help.html')
+
 @app.route('/avatars/<path:filename>')
 def serve_avatar(filename):
     return send_from_directory(AVATAR_DIR, filename)
@@ -290,12 +432,76 @@ def set_emotion():
     return jsonify({'ok': True})
 
 
+@app.route('/api/emotion/tick', methods=['POST'])
+def emotion_tick():
+    """前端每分钟调用此接口，触发情感值的时间衰减计算"""
+    state = apply_time_based_decay()
+    return jsonify({'ok': True, 'values': state['values']})
+
+
+@app.route('/api/emotion/prompt-template', methods=['GET'])
+def get_emotion_prompt_template():
+    """获取情感prompt模板（供前端自定义）"""
+    # 返回当前使用的prompt模板结构
+    return jsonify({
+        'template': {
+            'header': '【宗也当前内部状态——仅作行为参考，请勿在回复中提及任何数字】',
+            'ai_task': '【AI任务：生成情感状态描述】\n请在内心根据以上数值，为自己生成当前的：\n1. 亲密阶段（如：陌生人/初识/熟人/朋友/亲密/深度依赖等，用你自己的词汇）\n2. 情感倾向（如：冷淡/警惕/好奇/温和/依恋/占有欲等，用你自己的词汇）\n3. 当前心境（用一句话概括你此刻的内心感受）',
+            'instruction': '这些描述仅供你内心参考，不要在回复中明说。\n根据这些内在状态，以涟宗也的方式自然地在回复中体现出来。\n数值高的情绪应当微妙地渗透进语气、用词或沉默的选择里。\n不要解释，不要提数字，不要表演——只是成为他。'
+        }
+    })
+
+
+@app.route('/api/emotion/prompt-template', methods=['POST'])
+def set_emotion_prompt_template():
+    """保存自定义的情感prompt模板（暂存到settings）"""
+    body = request.get_json(force=True) or {}
+    s = load_settings()
+    s['emotion_prompt_template'] = body.get('template', {})
+    save_settings_file(s)
+    return jsonify({'ok': True})
+
+
 @app.route('/api/proactive-reset', methods=['POST'])
 def proactive_reset():
     """Reset the proactive message cooldown so the next loop check can fire immediately."""
     global _last_proactive_time
     _last_proactive_time = 0.0
     return jsonify({"ok": True})
+
+@app.route('/api/proactive-status', methods=['GET'])
+def proactive_status():
+    """返回主动消息触发条件的实时状态，用于调试"""
+    s = load_settings()
+    now = time.time()
+    PROACTIVE_INTERVAL = s.get('proactive_interval_minutes', 20) * 60
+    IDLE_THRESHOLD     = s.get('proactive_idle_minutes', 15) * 60
+
+    with _sse_lock:
+        has_client = len(_sse_clients) > 0
+
+    page_visible = _activity_status.get('page_visible', True)
+
+    cooldown_remaining = max(0, PROACTIVE_INTERVAL - (now - _last_proactive_time))
+
+    if _last_user_message_time > 0:
+        idle_secs = now - _last_user_message_time
+    elif _last_push_time > 0:
+        idle_secs = now - _last_push_time
+    else:
+        idle_secs = -1
+
+    return jsonify({
+        "sse_client_connected":    has_client,
+        "page_visible":            page_visible,
+        "cooldown_remaining_secs": round(cooldown_remaining),
+        "idle_secs":               round(idle_secs),
+        "idle_threshold_secs":     IDLE_THRESHOLD,
+        "idle_satisfied":          idle_secs >= IDLE_THRESHOLD if idle_secs >= 0 else False,
+        "api_configured":          bool(s.get('api_base') and s.get('api_key')),
+        "last_proactive_time":     datetime.datetime.fromtimestamp(_last_proactive_time).isoformat() if _last_proactive_time > 0 else None,
+        "last_user_message_time":  datetime.datetime.fromtimestamp(_last_user_message_time).isoformat() if _last_user_message_time > 0 else None,
+    })
 
 # ─────────────────────────────────────────
 # test
@@ -335,14 +541,28 @@ def proactive_test():
         system += f"\n\n【用户信息】\n- 用户名字：{user_name}\n"
         if user_desc:
             system += f"- 用户描述：{user_desc}\n"
-        system += f"\n【涟宗也的记忆】\n{get_memory_summary()}\n"
+        system += f"\n【涟宗也的记忆】\n{get_memory_summary(max_tokens_estimate=600)}\n"
+        feel = get_feel_summary()
+        if feel:
+            system += f"\n【涟宗也的自省感受（仅供内心参考，不要直接提及）】\n{feel}\n"
         system += f"\n当前时间：{now.strftime('%Y-%m-%d %H:%M')}（{time_ctx}）"
-        system += (
-            f"\n\n【当前情境】\n"
-            f"请以涟宗也的角色主动打招呼——可以问对方在做什么、是不是睡着了、或者随口说一句话。"
-            f"风格要符合角色设定：简短、平静、冷淡中带一点关心，不要热情，不要感叹号。"
-            f"回复最后一行必须附上动作指令。"
-        )
+
+        # 使用自定义 prompt 或默认 prompt（测试模式使用简化版）
+        custom_prompt = s.get('proactive_prompt', '').strip()
+        if custom_prompt:
+            # 替换变量（测试模式没有 idle_minutes，使用 0）
+            prompt_text = custom_prompt.replace('{user_name}', user_name)
+            prompt_text = prompt_text.replace('{idle_minutes}', '0')
+            prompt_text = prompt_text.replace('{time_context}', time_ctx)
+            system += f"\n\n【当前情境】\n{prompt_text}"
+        else:
+            # 默认 prompt（测试模式简化版）
+            system += (
+                f"\n\n【当前情境】\n"
+                f"请以涟宗也的角色主动打招呼——可以问对方在做什么、是不是睡着了、或者随口说一句话。"
+                f"风格要符合角色设定：简短、平静、冷淡中带一点关心，不要热情，不要感叹号。"
+                f"回复最后一行必须附上动作指令。"
+            )
 
         hist = load_history()
         msgs = hist.get('messages', [])
@@ -351,6 +571,10 @@ def proactive_test():
         for m in recent:
             if isinstance(m.get('content'), str):
                 api_msgs.append({'role': m['role'], 'content': m['content']})
+
+        # 应用 Prompt 注入（测试模式也需要注入）
+        system_injected, api_msgs_injected = apply_injections(system, api_msgs[1:])
+        api_msgs = [{'role': 'system', 'content': system_injected}] + api_msgs_injected
 
         r = req.post(
             f"{api_base}/chat/completions",
@@ -455,11 +679,30 @@ def get_history():
 
 @app.route('/api/history', methods=['POST'])
 def post_history():
+    global _last_user_message_time
     body = request.json; data = load_history()
+
+    # 检测是否有新的用户消息（对比消息数组，找出新增的消息）
+    old_messages = data.get('messages', [])
+    new_messages = body.get('messages', [])
+
+    # 找出新增的消息（从旧消息长度开始的所有消息）
+    if len(new_messages) > len(old_messages):
+        added_messages = new_messages[len(old_messages):]
+        # 检查新增消息中是否有用户消息
+        has_new_user_msg = any(msg.get('role') == 'user' for msg in added_messages)
+        if has_new_user_msg:
+            _last_user_message_time = time.time()
+            logger.info(f"[post_history] 检测到新用户消息，更新空闲计时器")
+
     for k in ("messages", "last_seen", "summary", "hidden_count"):
         if k in body:
             data[k] = body[k]
     save_history_file(data)
+
+    # 触发性格/关系分析检查（非阻塞）
+    threading.Thread(target=maybe_trigger_analysis, args=(data,), daemon=True).start()
+
     return jsonify({"ok": True})
 
 @app.route('/api/reader-history', methods=['POST'])
@@ -507,19 +750,108 @@ def chat():
     user_name = s.get('user_name', '初惠夏')
     user_desc = s.get('user_desc', '')
 
+    # 根据配置选择情感系统
+    emotion_system = s.get('emotion_system', 'occ')
+    if emotion_system == 'occ':
+        from emotion_occ import on_message_received, build_prompt_block
+        emotion_state = on_message_received()
+    else:
+        from emotion import on_message_received, build_prompt_block
+        emotion_state = on_message_received()
+
     system = build_character_card(s)
     system += f"\n\n【用户信息】\n- 用户名字：{user_name}\n"
     if user_desc:
         system += f"- 用户描述：{user_desc}\n"
-    system += f"\n【涟宗也的记忆】\n{get_memory_summary()}\n"
-    system += f"\n当前时间：{datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}"
-    system += (
-        "\n\n【消息格式说明】\n"
-        "你可以在回复中使用换行（\\n）来将内容拆成多条独立消息气泡发送，"
-        "每行将显示为一条单独的聊天气泡。"
-        "适合用来分步骤回复、先说一句再补充、或模拟连续发消息的自然感。"
-        "不需要刻意分行，正常回复即可；但如果情景适合多条发出，可以自然地换行。"
-    )
+
+    # 根据配置选择记忆引擎
+    memory_engine = s.get('memory_engine', 'simple')
+    if memory_engine == 'ombre':
+        try:
+            from memory_ombre import get_memory_summary_ombre, get_ombre_status
+            # 使用 Ombre 的浮现模式获取记忆
+            system += f"\n【涟宗也的记忆】\n{get_memory_summary_ombre(max_tokens_estimate=600)}\n"
+            # 获取 feel 类型记忆
+            feel_summary = get_memory_summary_ombre(domain='feel')
+            if feel_summary and '涟宗也的自省感受' in feel_summary:
+                system += f"\n{feel_summary}\n"
+        except Exception as e:
+            # Fallback to simple mode
+            system += f"\n【涟宗也的记忆】\n{get_memory_summary(max_tokens_estimate=600)}\n"
+            feel = get_feel_summary()
+            if feel:
+                system += f"\n【涟宗也的自省感受（仅供内心参考，不要直接提及）】\n{feel}\n"
+    else:
+        system += f"\n【涟宗也的记忆】\n{get_memory_summary(max_tokens_estimate=600)}\n"
+        feel = get_feel_summary()
+        if feel:
+            system += f"\n【涟宗也的自省感受（仅供内心参考，不要直接提及）】\n{feel}\n"
+
+    # 注入性格与关系总结
+    hist_data = load_history()
+    p_sum = hist_data.get('personality_summary', '')
+    r_sum = hist_data.get('relationship_summary', '')
+    if p_sum:
+        system += f"\n\n【对用户的性格洞察】\n{p_sum}"
+    if r_sum:
+        system += f"\n\n【与用户的关系记录】\n{r_sum}"
+
+    # 添加详细的当前时间信息
+    now = datetime.datetime.now()
+    weekday_names = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日']
+    weekday = weekday_names[now.weekday()]
+    hour = now.hour
+    if   5 <= hour <  9: time_ctx = '清晨'
+    elif 9 <= hour < 12: time_ctx = '上午'
+    elif 12 <= hour < 14: time_ctx = '中午'
+    elif 14 <= hour < 18: time_ctx = '下午'
+    elif 18 <= hour < 21: time_ctx = '傍晚'
+    elif 21 <= hour < 24: time_ctx = '晚上'
+    else:                  time_ctx = '深夜'
+    system += f"\n当前时间：{now.strftime('%Y年%m月%d日')} {weekday} {now.strftime('%H:%M')}（{time_ctx}）"
+
+    # 注入情感状态
+    system += build_prompt_block(emotion_state)
+
+    # 根据情感系统类型添加不同的使用指南
+    if emotion_system == 'occ':
+        system += (
+            "\n\n【记忆系统使用指南】\n"
+            "你拥有长期记忆能力，必须主动、频繁地使用 save_memory 工具。\n"
+            "每次对话中，当用户分享个人信息、表达偏好、提到重要事件、情绪变化时，立即保存记忆。\n"
+            "不要等到对话结束才保存，而是在获得信息的当下就记录。\n"
+            "记忆会帮助你在未来的对话中更好地理解用户，建立更深的关系。\n"
+            "\n【OCC 认知评价系统使用指南】\n"
+            "每次对话后，你需要：\n"
+            "1. 使用 appraise_event 工具对事件进行认知评价（新奇感、安全感、威胁感等）\n"
+            "2. 使用 add_inner_thought 工具记录你的内心想法（用户看不到）\n"
+            "3. 使用 update_long_term_emotion 工具更新长期情感（亲密度、信任度、依赖度）\n"
+            "你的性格特质会影响认知评价，评价结果会自动转换为情绪状态。\n"
+            "根据当前情绪状态调整回复方式：高唤醒时可以连发消息，低唤醒时保持简短。\n"
+            "\n【消息格式说明】\n"
+            "你可以在回复中使用换行（\\n）来将内容拆成多条独立消息气泡发送，"
+            "每行将显示为一条单独的聊天气泡。"
+            "适合用来分步骤回复、先说一句再补充、或模拟连续发消息的自然感。"
+            "不需要刻意分行，正常回复即可；但如果情景适合多条发出，可以自然地换行。"
+        )
+    else:
+        system += (
+            "\n\n【记忆系统使用指南】\n"
+            "你拥有长期记忆能力，必须主动、频繁地使用 save_memory 工具。\n"
+            "每次对话中，当用户分享个人信息、表达偏好、提到重要事件、情绪变化时，立即保存记忆。\n"
+            "不要等到对话结束才保存，而是在获得信息的当下就记录。\n"
+            "记忆会帮助你在未来的对话中更好地理解用户，建立更深的关系。\n"
+            "\n【情感系统使用指南】\n"
+            "每次对话结束前，必须调用 update_emotion 工具更新你的情感状态。\n"
+            "根据对话内容的情感色彩，调整 loneliness（孤独感）、intimacy（亲密感）、excitement（兴奋）、"
+            "irritation（烦躁）、curiosity（好奇）、melancholy（忧郁）、affection（亲密度）等维度。\n"
+            "温暖的对话应减少孤独感、增加亲密感；被关心时增加亲密度；有趣的话题增加兴奋和好奇。\n"
+            "\n【消息格式说明】\n"
+            "你可以在回复中使用换行（\\n）来将内容拆成多条独立消息气泡发送，"
+            "每行将显示为一条单独的聊天气泡。"
+            "适合用来分步骤回复、先说一句再补充、或模拟连续发消息的自然感。"
+            "不需要刻意分行，正常回复即可；但如果情景适合多条发出，可以自然地换行。"
+        )
 
     # Away notice
     away = body.get('away_notice', '')
@@ -564,9 +896,49 @@ def chat():
     if book_ctx:
         system += f"\n\n【正在与用户共同阅读】\n{book_ctx}"
 
+    # Quote context (user quoting a previous message)
+    quoted_text = body.get('quoted_text', '')
+    quoted_role = body.get('quoted_role', 'assistant')
+    if quoted_text:
+        role_label = '涟宗也' if quoted_role == 'assistant' else user_name
+        # Truncate to 150 chars to avoid token bloat
+        quote_preview = quoted_text[:150] + ('...' if len(quoted_text) > 150 else '')
+        quote_hint = f"[用户引用了{role_label}的消息：「{quote_preview}」并回复]"
+        # Inject into the last user message
+        if messages and messages[-1]['role'] == 'user':
+            messages[-1]['content'] = f"{quote_hint}\n{messages[-1]['content']}"
+
+    # 处理消息历史，添加日期分隔符让 AI 感知时间变化
+    processed_messages = []
+    last_date = None
+    for msg in messages:
+        # 如果消息有时间戳，检查日期是否变化
+        if 'ts' in msg and msg['ts']:
+            try:
+                msg_time = datetime.datetime.fromtimestamp(msg['ts'] / 1000)
+                msg_date = msg_time.strftime('%Y年%m月%d日')
+                weekday_names = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日']
+                weekday = weekday_names[msg_time.weekday()]
+
+                # 如果日期变化，插入日期分隔符
+                if last_date != msg_date:
+                    processed_messages.append({
+                        'role': 'system',
+                        'content': f"【{msg_date} {weekday}】"
+                    })
+                    last_date = msg_date
+            except Exception:
+                pass
+
+        # 添加原始消息
+        processed_messages.append(msg)
+
+    # 应用 Prompt 注入
+    system, processed_messages = apply_injections(system, processed_messages)
+
     payload = {
         "model": model,
-        "messages": [{"role": "system", "content": system}] + messages,
+        "messages": [{"role": "system", "content": system}] + processed_messages,
         "tools": TOOLS, "tool_choice": "auto",
         "max_tokens": 800, "temperature": 0.88
     }
@@ -640,7 +1012,10 @@ def screenshot_understand():
         system += f"\n\n【用户信息】\n- 用户名字：{user_name}\n"
         if user_desc:
             system += f"- 用户描述：{user_desc}\n"
-        system += f"\n【涟宗也的记忆】\n{get_memory_summary()}\n"
+        system += f"\n【涟宗也的记忆】\n{get_memory_summary(max_tokens_estimate=600)}\n"
+        feel = get_feel_summary()
+        if feel:
+            system += f"\n【涟宗也的自省感受（仅供内心参考，不要直接提及）】\n{feel}\n"
         system += f"\n当前时间：{datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}"
         system += "\n\n用户分享了一张屏幕截图给你看。请用涟宗也的角色风格回答用户的问题，语气保持角色设定，简洁冷淡，回复最后一行附上动作指令。"
         r = req.post(f"{api_base}/chat/completions",
@@ -894,6 +1269,99 @@ def export_memory():
         'Content-Type': 'application/json; charset=utf-8'
     }
 
+@app.route('/api/memory/<key>/touch', methods=['POST'])
+def touch_mem(key):
+    """AI 回复中引用某条记忆时，由前端调用，增加激活计数。"""
+    from memory import touch_memory
+    touch_memory(key)
+    return jsonify({"ok": True})
+
+@app.route('/api/memory/feels', methods=['GET'])
+def get_feels():
+    """返回所有 feel 类型记忆。"""
+    data = mem_load_all()
+    feels = {k: v for k, v in data.items() if v.get("type") == "feel"}
+    return jsonify(feels)
+
+@app.route('/api/memory/archived', methods=['GET'])
+def get_archived():
+    """返回已遗忘（archived）的记忆，供查阅。"""
+    data = mem_load_all()
+    archived = {k: v for k, v in data.items() if v.get("type") == "archived"}
+    return jsonify(archived)
+
+@app.route('/api/memory/<key>/restore', methods=['POST'])
+def restore_memory(key):
+    """将 archived 记忆恢复为 dynamic。"""
+    from memory import _write
+    data = mem_load_all()
+    if key in data and data[key].get("type") == "archived":
+        data[key]["type"] = "dynamic"
+        data[key]["resolved"] = False
+        data[key]["last_active"] = datetime.datetime.now().isoformat()
+        _write(data)
+    return jsonify({"ok": True})
+
+# ─────────────────────────────────────────
+#  Prompt Injections API
+# ─────────────────────────────────────────
+@app.route('/api/injections', methods=['GET'])
+def get_injections():
+    """获取所有 prompt 注入条目"""
+    return jsonify(load_injections())
+
+@app.route('/api/injections', methods=['POST'])
+def create_injection():
+    """创建新的 prompt 注入条目"""
+    body = request.json or {}
+    items = load_injections()
+    new_item = {
+        "id": f"inj_{int(time.time()*1000)}",
+        "name": body.get("name", "未命名条目"),
+        "content": body.get("content", ""),
+        "position": body.get("position", "system_bottom"),
+        "enabled": body.get("enabled", True),
+        "priority": body.get("priority", 0)
+    }
+    items.append(new_item)
+    save_injections(items)
+    return jsonify({"ok": True, "id": new_item["id"]})
+
+@app.route('/api/injections/<inj_id>', methods=['PUT'])
+def update_injection(inj_id):
+    """更新指定的 prompt 注入条目"""
+    body = request.json or {}
+    items = load_injections()
+    for item in items:
+        if item["id"] == inj_id:
+            item.update({k: v for k, v in body.items() if k != "id"})
+            break
+    save_injections(items)
+    return jsonify({"ok": True})
+
+@app.route('/api/injections/<inj_id>', methods=['DELETE'])
+def delete_injection(inj_id):
+    """删除指定的 prompt 注入条目"""
+    items = [i for i in load_injections() if i["id"] != inj_id]
+    save_injections(items)
+    return jsonify({"ok": True})
+
+# ─────────────────────────────────────────
+#  Analysis Status API
+# ─────────────────────────────────────────
+@app.route('/api/analysis-status', methods=['GET'])
+def get_analysis_status():
+    """返回当前累计字符数和上次分析摘要"""
+    hist_data = load_history()
+    s = load_settings()
+    return jsonify({
+        "chars": hist_data.get('chars_since_last_analysis', 0),
+        "threshold": s.get('analysis_threshold', 8000),
+        "personality_summary": hist_data.get('personality_summary', ''),
+        "relationship_summary": hist_data.get('relationship_summary', ''),
+        "last_analysis_time": hist_data.get('last_analysis_time', None)
+    })
+
 READER_STATE_FILE = 'reader_state.json'
 ACTIVITY_LOG_FILE = 'activity_log.json'
 
@@ -1041,28 +1509,27 @@ def stream_events():
     def generate():
         # Tell the client the connection is alive
         yield "event: connected\ndata: {\"ok\": true}\n\n"
-        while True:
-            try:
-                payload = client_queue.get(timeout=25)
-                yield payload
-            except queue.Empty:
-                # Heartbeat keeps nginx / proxies from killing the connection
-                yield ": heartbeat\n\n"
-            except GeneratorExit:
-                break
-
-    # Clean up when the browser disconnects
-    def on_close():
-        with _sse_lock:
-            try:
-                _sse_clients.remove(client_queue)
-            except ValueError:
-                pass
+        try:
+            while True:
+                try:
+                    payload = client_queue.get(timeout=25)
+                    yield payload
+                except queue.Empty:
+                    # Heartbeat keeps nginx / proxies from killing the connection
+                    yield ": heartbeat\n\n"
+        except GeneratorExit:
+            pass
+        finally:
+            # 保证无论何种方式退出都能清理
+            with _sse_lock:
+                try:
+                    _sse_clients.remove(client_queue)
+                except ValueError:
+                    pass
 
     resp = Response(generate(), mimetype='text/event-stream')
     resp.headers['Cache-Control'] = 'no-cache'
     resp.headers['X-Accel-Buffering'] = 'no'  # disable nginx buffering
-    resp.call_on_close(on_close)
     return resp
 
 
@@ -1097,32 +1564,32 @@ def _proactive_message_loop():
 
             # ① SSE client connected?
             with _sse_lock:
-                if not _sse_clients:
+                has_clients = len(_sse_clients) > 0
+                if not has_clients:
+                    logger.debug("[proactive_loop] 跳过：无 SSE 客户端连接")
                     continue
 
             # ② Page visible? (only enforced when setting is True)
             if require_visible and not _activity_status.get('page_visible', True):
+                logger.debug("[proactive_loop] 跳过：页面不可见")
                 continue
 
             # ③ Cooldown
-            if time.time() - _last_proactive_time < PROACTIVE_INTERVAL:
+            cooldown_remaining = PROACTIVE_INTERVAL - (time.time() - _last_proactive_time)
+            if cooldown_remaining > 0:
+                logger.debug(f"[proactive_loop] 跳过：冷却中，剩余 {cooldown_remaining:.0f} 秒")
                 continue
 
             # ④ How long since the user last sent a message?
-            hist = load_history()
-            last_seen_str = hist.get('last_seen')
-            if not last_seen_str:
-                # 没有聊天记录时，用前端最近一次活动心跳作为兜底参考
-                if _last_push_time <= 0:
-                    continue
+            if _last_user_message_time > 0:
+                idle_secs = time.time() - _last_user_message_time
+            elif _last_push_time > 0:
                 idle_secs = time.time() - _last_push_time
             else:
-                try:
-                    last_seen_dt = datetime.datetime.fromisoformat(last_seen_str)
-                    idle_secs = (datetime.datetime.now() - last_seen_dt).total_seconds()
-                except Exception:
-                    continue
+                logger.debug("[proactive_loop] 跳过：无用户活动记录")
+                continue
             if idle_secs < IDLE_THRESHOLD:
+                logger.debug(f"[proactive_loop] 跳过：用户空闲 {idle_secs:.0f}s < 阈值 {IDLE_THRESHOLD}s")
                 continue
 
             # ⑤ API configured?
@@ -1130,7 +1597,10 @@ def _proactive_message_loop():
             api_key  = s.get('api_key', '')
             model    = s.get('model', '')
             if not api_base or not api_key:
+                logger.debug("[proactive_loop] 跳过：API 未配置")
                 continue
+
+            logger.info(f"[proactive_loop] 触发条件满足，准备发送主动消息（空闲 {idle_secs:.0f}s）")
 
             # ─── Build the proactive prompt ───
             from config import build_character_card
@@ -1152,23 +1622,42 @@ def _proactive_message_loop():
             system += f"\n\n【用户信息】\n- 用户名字：{user_name}\n"
             if user_desc:
                 system += f"- 用户描述：{user_desc}\n"
-            system += f"\n【涟宗也的记忆】\n{get_memory_summary()}\n"
+            system += f"\n【涟宗也的记忆】\n{get_memory_summary(max_tokens_estimate=600)}\n"
+            feel = get_feel_summary()
+            if feel:
+                system += f"\n【涟宗也的自省感受（仅供内心参考，不要直接提及）】\n{feel}\n"
             system += f"\n当前时间：{now.strftime('%Y-%m-%d %H:%M')}（{time_ctx}）"
-            system += (
-                f"\n\n【当前情境】\n"
-                f"{user_name} 已经 {idle_min} 分钟没有发消息了，但仍然停留在聊天页面上。"
-                f"请以涟宗也的角色主动打招呼——可以问对方在做什么、是不是睡着了、或者随口说一句话。"
-                f"风格要符合角色设定：简短、平静、冷淡中带一点关心，不要热情，不要感叹号。"
-                f"回复最后一行必须附上动作指令。"
-            )
+
+            # 使用自定义 prompt 或默认 prompt
+            custom_prompt = s.get('proactive_prompt', '').strip()
+            if custom_prompt:
+                # 替换变量
+                prompt_text = custom_prompt.replace('{user_name}', user_name)
+                prompt_text = prompt_text.replace('{idle_minutes}', str(idle_min))
+                prompt_text = prompt_text.replace('{time_context}', time_ctx)
+                system += f"\n\n【当前情境】\n{prompt_text}"
+            else:
+                # 默认 prompt
+                system += (
+                    f"\n\n【当前情境】\n"
+                    f"{user_name} 已经 {idle_min} 分钟没有发消息了，但仍然停留在聊天页面上。"
+                    f"请以涟宗也的角色主动打招呼——可以问对方在做什么、是不是睡着了、或者随口说一句话。"
+                    f"风格要符合角色设定：简短、平静、冷淡中带一点关心，不要热情，不要感叹号。"
+                    f"回复最后一行必须附上动作指令。"
+                )
 
             # Include last few turns as context
+            hist = load_history()
             msgs = hist.get('messages', [])
             recent = msgs[-6:] if len(msgs) >= 6 else msgs
             api_msgs = [{'role': 'system', 'content': system}]
             for m in recent:
                 if isinstance(m.get('content'), str):
                     api_msgs.append({'role': m['role'], 'content': m['content']})
+
+            # 应用 Prompt 注入（主动消息也需要注入）
+            system_injected, api_msgs_injected = apply_injections(system, api_msgs[1:])
+            api_msgs = [{'role': 'system', 'content': system_injected}] + api_msgs_injected
 
             r = req.post(
                 f"{api_base}/chat/completions",
@@ -1192,7 +1681,10 @@ def _proactive_message_loop():
                     clean.append(line)
             content = '\n'.join(clean).strip()
             if not content:
+                logger.warning("[proactive_loop] AI 返回空内容，跳过")
                 continue
+
+            logger.info(f"[proactive_loop] 成功生成主动消息：{content[:50]}...")
 
             # ─── Push SSE event ───
             push_sse_event('proactive_message', {
@@ -1212,13 +1704,13 @@ def _proactive_message_loop():
                 'ts':        int(now.timestamp() * 1000),
                 'proactive': True
             })
-            hist_data['last_seen'] = now.isoformat()
+            # 不更新 last_seen，避免重置空闲计时器
             save_history_file(hist_data)
 
             _last_proactive_time = time.time()
 
-        except Exception:
-            pass   # never let the thread die
+        except Exception as e:
+            logger.error(f"[proactive_loop] 异常: {e}", exc_info=True)
 
 
 # ─────────────────────────────────────────
@@ -1226,6 +1718,9 @@ def _proactive_message_loop():
 # ─────────────────────────────────────────
 if __name__ == '__main__':
     import webbrowser, threading, subprocess, sys
+
+    # 启动时初始化情感系统
+    on_session_start()
 
     def _open_browser():
         __import__('time').sleep(1.2)
@@ -1244,4 +1739,5 @@ if __name__ == '__main__':
     print("✓ 涟宗也已启动 → http://localhost:5000")
     print("  阅读页面    → http://localhost:5000/reader")
     print("  监控小窗口  → 自动弹出")
+    print("  情感系统    → 已初始化（基于时间差计算）")
     app.run(debug=False, port=5000, threaded=True)
