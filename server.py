@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, send_from_directory, Response, stream
 import requests as req
 import json, os, datetime, base64, re, time, queue, threading, logging
 from memory import get_memory_summary, save_memory as mem_save, load_all as mem_load_all, delete_memory as mem_delete, get_feel_summary
-from emotion import load_state, save_state, apply_time_based_decay, on_session_start, on_message_received, build_prompt_block
+from emotion_occ import load_state, save_state, apply_time_decay, on_session_start, on_message_received, build_prompt_block
 from analysis_helper import run_analysis
 
 # ─────────────────────────────────────────
@@ -383,6 +383,10 @@ def reader():
 def help_page():
     return send_from_directory(FRONTEND_DIR, 'help.html')
 
+@app.route('/settings')
+def settings_page():
+    return send_from_directory(FRONTEND_DIR, 'settings.html')
+
 @app.route('/avatars/<path:filename>')
 def serve_avatar(filename):
     return send_from_directory(AVATAR_DIR, filename)
@@ -435,8 +439,8 @@ def set_emotion():
 @app.route('/api/emotion/tick', methods=['POST'])
 def emotion_tick():
     """前端每分钟调用此接口，触发情感值的时间衰减计算"""
-    state = apply_time_based_decay()
-    return jsonify({'ok': True, 'values': state['values']})
+    state = apply_time_decay()
+    return jsonify({'ok': True, 'current_emotion': state.get('current_emotion', {})})
 
 
 @app.route('/api/emotion/prompt-template', methods=['GET'])
@@ -1736,8 +1740,9 @@ if __name__ == '__main__':
     threading.Thread(target=_open_browser, daemon=True).start()
     threading.Thread(target=_launch_widget, daemon=True).start()
     threading.Thread(target=_proactive_message_loop, daemon=True).start()
-    print("✓ 涟宗也已启动 → http://localhost:5000")
-    print("  阅读页面    → http://localhost:5000/reader")
-    print("  监控小窗口  → 自动弹出")
-    print("  情感系统    → 已初始化（基于时间差计算）")
+    print("涟宗也已启动 -> http://localhost:5000")
+    print("  阅读页面    -> http://localhost:5000/reader")
+    print("  设置页面    -> http://localhost:5000/settings")
+    print("  监控小窗口  -> 自动弹出")
+    print("  情感系统    -> 已初始化（OCC认知评价模型）")
     app.run(debug=False, port=5000, threaded=True)

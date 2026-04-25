@@ -1,0 +1,187 @@
+Soya-beta 项目
+Bug 修复任务书
+版本 v1.0 · 2026-04-26
+项目仓库
+https://github.com/Electroncloud-cat/Soya-beta
+涉及文件
+emotion.py · server.py · frontend/index.html · index.html
+Bug 数量
+3 个（高优先级）
+撰写日期
+2026-04-26
+本文件包含三个 Bug 的根因分析、复现步骤与修复方案
+Bug #1 — AI 感知不到时间流逝
+1.1 现象描述
+AI 的 system prompt 中已注入了当前时间（如[2026年04月26日 星期日 14:30]），并且 emotion.py 中的 build_prompt_block() 函数也尝试生成[距上次对话多久]的情境描述（time_desc）。然而，即使距上次发消息已经过去了一整天，AI 在回复时依然表现得像刚刚结束了对话，完全感知不到时间流逝。
+1.2 根因分析
+问题出在 emotion.py 的 on_message_received() 函数（第 257–276 行）与 build_prompt_block() 函数（第 337–402 行）之间的时序错误：
+on_message_received() 的执行流程：
+读取旧的 ts['last_active']（正确的上次消息时间）
+据此计算 idle_hours，应用情绪衰减（正确）
+将 ts['last_active'] 更新为当前时间 now_str（问题在此！）
+调用 save_state(state) 保存，并 return state（已含新时间戳）
+随后 server.py 立即调用 build_prompt_block(emotion_state)。此时 emotion_state 中的 ts['last_active'] 已经是刚写入的[现在]，因此：
+elapsed_min = _hours_since(ref) * 60  →  约等于 0
+time_desc = '刚刚结束了对话'  （恒为此值，无论实际间隔多久）
+这意味着 AI 看到的情境永远是[刚刚结束了对话]，完全丢失了真实的时间间隔信息。
+1.3 涉及文件与行号
+emotion.py
+第 257–276 行 on_message_received()
+emotion.py
+第 337–402 行 build_prompt_block()
+server.py
+第 755–760 行（调用两函数处）
+1.4 修复方案
+方案：在更新 last_active 之前，将旧值保存为 prev_last_active，让 build_prompt_block 使用 prev_last_active 来计算 time_desc。
+emotion.py — on_message_received() 修改：
+def on_message_received() -> dict:
+    state = load_state()
+    now_str = _now_iso()
+    ts = state['timestamps']
+    ref = ts.get('last_active') or ts.get('session_start')
+    if ref:
+        idle_hours = _hours_since(ref)
+        _apply_idle_decay(state, idle_hours)
+    # ★ 新增：在更新前保存旧时间戳，供 build_prompt_block 使用
+    ts['prev_last_active'] = ts.get('last_active')
+    ts['last_active'] = now_str
+    save_state(state)
+    return state
+emotion.py — build_prompt_block() 修改（第 347 行附近）：
+# 修改前：
+ref = ts.get('last_active')
+# 修改后：优先使用 prev_last_active（本次消息前的旧时间戳）
+ref = ts.get('prev_last_active') or ts.get('last_active')
+此方案零侵入：prev_last_active 仅在 on_message_received 中写入，不影响其他任何逻辑。
+1.5 验证方法
+人为修改 emotion_state.json 中的 last_active 为 24 小时前的 ISO 时间戳
+发送一条消息，查看 system prompt 日志（可在 server.py 中临时 print(system)）
+预期：time_desc 应显示 [用户离开 24 小时 0 分钟] 或类似描述，而非 [刚刚结束了对话]
+AI 回复中应自然体现出时间感（如略显疏离、带着间隔感的语气）
+Bug #2 — 情感系统衰减逻辑不完整
+2.1 现象描述
+情感系统在长时间离开后，melancholy（忧郁）无法正常积累，affection（亲密度）也不会随时间流失，导致情感状态与实际互动模式脱节，角色表现缺乏真实的情绪变化感。
+2.2 根因分析（共三处）
+问题 A：每分钟 tick 遗漏了 melancholy 和 affection
+apply_time_based_decay()（前端每分钟调用）只更新了 loneliness / intimacy / excitement / irritation / curiosity 五项，与 _apply_away_decay() 相比，缺少：
+melancholy 的离开时间积累（离开 > 2 小时后应缓慢升高）
+affection 的时间流失（离开 > threshold_hours 后应每天扣减）
+问题 B：is_idle 判断逻辑错误
+apply_time_based_decay() 判断是否处于 idle（在线静默）状态的代码为：
+session_hours = _hours_since(ts['session_start'])
+if session_hours < 12:
+    is_idle = True
+这里 session_hours 是服务器启动到现在的时长，而非用户最后活跃到现在的时长。结果是：
+服务器运行超过 12 小时后，即使用户一直在聊天，也会被误判为 away 状态，导致孤独感异常累积
+正确的做法：应以 last_active 为基准，判断用户是否已沉默超过某个阈值
+问题 C：melancholy 的 clamp 未使用自定义上限
+_apply_away_decay() 中使用了 _clamp(..., 0.0, 0.75) 限制 melancholy 上限，但如果未来在 tick 中添加 melancholy 更新，需同样使用此边界，否则会被默认的 _clamp()（上限 1.0）覆盖。
+2.3 涉及文件与行号
+emotion.py
+第 183–229 行 apply_time_based_decay()
+emotion.py
+第 142–165 行 _apply_away_decay()（参考实现）
+emotion.py
+第 122–123 行 _clamp()
+2.4 修复方案
+修改 apply_time_based_decay()，补全缺失的衰减字段并修正 is_idle 判断：
+def apply_time_based_decay():
+    state = load_state()
+    now_str = _now_iso()
+    ts = state['timestamps']
+    c = state['coefficients']
+    v = state['values']
+    last_update = ts.get('last_tick') or ts.get('last_active') or ts.get('session_start')
+    if not last_update:
+        ts['last_tick'] = now_str
+        save_state(state)
+        return state
+    elapsed_hours = _hours_since(last_update)
+    if elapsed_hours < 0.01:
+        return state
+    # ★ 修正：用 last_active 判断用户是否真的在线
+    is_idle = False
+    if ts.get('last_active'):
+        # 15 分钟内有消息 → 视为 idle；否则视为 away
+        is_idle = _hours_since(ts['last_active']) < 0.25
+    if is_idle:
+        v['loneliness'] = _clamp(v['loneliness'] + c['loneliness_per_hour_idle'] * elapsed_hours)
+    else:
+        v['loneliness'] = _clamp(v['loneliness'] + c['loneliness_per_hour_away'] * elapsed_hours)
+        # ★ 新增：离开时 melancholy 缓慢升高（上限 0.75）
+        if elapsed_hours > 2:
+            v['melancholy'] = _clamp(v['melancholy'] + 0.01 * min(elapsed_hours, 12), 0.0, 0.75)
+        # ★ 新增：离开超过阈值后 affection 随时间流失
+        total_away = _hours_since(ts.get('last_active') or last_update)
+        threshold = c['affection_loss_threshold_hours']
+        if total_away > threshold:
+            loss = c['affection_away_loss_per_day'] * elapsed_hours / 24.0
+            v['affection'] = _clamp(v['affection'] - loss, 0.0, 100.0)
+    v['intimacy']   = _clamp(v['intimacy']   - c['intimacy_decay_per_hour']   * elapsed_hours)
+    v['excitement'] = _clamp(v['excitement'] - c['excitement_decay_per_hour']  * elapsed_hours)
+    v['irritation'] = _clamp(v['irritation'] - c['irritation_decay_per_hour']  * elapsed_hours)
+    v['curiosity']  = _clamp(v['curiosity']  - c['curiosity_decay_per_hour']   * elapsed_hours)
+    ts['last_tick'] = now_str
+    save_state(state)
+    return state
+2.5 验证方法
+将 emotion_state.json 的 last_active 设为 10 小时前，last_tick 设为 2 小时前
+手动调用 /api/emotion/tick 接口（GET）
+查看返回的 emotion_state，预期 melancholy 应有小幅上升，affection 如已超阈值则小幅下降
+再将 last_active 设为 1 分钟前（模拟在线），验证此时 melancholy 和 affection 不变
+Bug #3 — 点击设置按钮无法跳转到 settings.html
+3.1 现象描述
+在 index.html（根目录版本及 frontend/ 目录版本均存在此问题）中，点击工具栏的[⚙ 设置]按钮，只会弹出页面内的 modal-settings 弹窗，而非跳转至独立的设置页面 settings.html。
+3.2 根因分析
+按钮的 onclick 绑定的是 openModal()，而非页面跳转：
+<button class="tb-btn" onclick="openModal('modal-settings')">⚙ 设置</button>
+frontend/settings.html 是一个完整的独立设置页面，服务端的 serve_static 路由（server.py 第 390–395 行）可以正确提供该文件。问题仅在于前端入口点未链接到该页面。
+另外，server.py 目前也没有为 /settings 注册专用路由（只依赖通配符 serve_static），虽然功能上可行，但语义上不清晰。
+3.3 涉及文件与行号
+index.html（根目录）
+第 304 行，设置按钮 onclick
+frontend/index.html
+第 357 行，设置按钮 onclick
+server.py
+第 374–395 行，静态路由区（建议补充 /settings 路由）
+3.4 修复方案
+步骤 1：修改两个 index.html 中的设置按钮
+index.html（根目录）第 304 行，frontend/index.html 第 357 行，均将：
+<button class="tb-btn" onclick="openModal('modal-settings')">⚙ 设置</button>
+改为：
+<button class="tb-btn" onclick="window.location.href='/settings.html'">⚙ 设置</button>
+步骤 2（推荐）：在 server.py 中为设置页面添加专用路由
+在 server.py 第 384 行之后，/help 路由下方插入：
+@app.route('/settings')
+def settings_page():
+    return send_from_directory(FRONTEND_DIR, 'settings.html')
+这样用户可以通过 /settings 和 /settings.html 两个路径都访问到设置页，语义更明确，且与 /reader、/help 等路由风格保持一致。
+步骤 3（可选）：保留 modal-settings 弹窗
+如果 modal-settings 弹窗中存在一些 index 页面专用的快捷设置项，可以保留该 div，只需把入口按钮改为跳转即可；若弹窗内容完全与 settings.html 重复，可安全删除。
+3.5 验证方法
+重启服务器，在浏览器打开主页
+点击工具栏 [⚙ 设置] 按钮，预期：浏览器地址栏跳转为 /settings.html，页面完整加载
+在浏览器直接访问 /settings，预期：同样加载设置页
+确认设置页内容与之前 modal 内容一致，功能正常
+附录 — 修复优先级与工作量估计
+编号
+Bug 简述
+优先级
+预估工时
+风险
+#1
+on_message_received 时序错误导致 time_desc 恒为 0
+🔴 高
+0.5h
+极低
+#2
+apply_time_based_decay 遗漏字段 + is_idle 误判
+🟠 中高
+1h
+低
+#3
+设置按钮 onclick 未链接到 settings.html
+🟡 中
+0.25h
+无
+建议修复顺序：Bug #3（最简单，立竿见影）→ Bug #1（核心体验，改动极小）→ Bug #2（需要仔细测试情感数值边界）。
