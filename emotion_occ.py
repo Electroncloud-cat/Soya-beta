@@ -304,6 +304,7 @@ def apply_time_decay():
         return state
 
     current = state["current_emotion"]
+    lt = state["long_term"]
 
     # 效价向中性衰减（0.5）
     valence_target = 0.5
@@ -315,6 +316,18 @@ def apply_time_decay():
 
     # 强度衰减
     current["intensity"] *= (0.9 ** elapsed_hours)
+
+    # 长期情感随时间流失（长时间离开后）
+    if ts.get("last_active"):
+        away_hours = _hours_since(ts["last_active"])
+        # 离开超过 6 小时后，亲密度开始缓慢流失
+        if away_hours > 6:
+            affection_loss = 0.5 * elapsed_hours / 24.0  # 每天流失约 0.5
+            lt["affection"] = _clamp(lt["affection"] - affection_loss, 0, 100)
+        # 离开超过 12 小时后，信任度也开始流失
+        if away_hours > 12:
+            trust_loss = 0.3 * elapsed_hours / 24.0  # 每天流失约 0.3
+            lt["trust"] = _clamp(lt["trust"] - trust_loss, 0, 100)
 
     # 更新离散情绪
     _update_discrete_emotions(state)
@@ -361,6 +374,8 @@ def on_message_received() -> dict:
         if idle_hours > 0.25:
             apply_time_decay()
 
+    # ★ 新增：在更新前保存旧时间戳，供 build_prompt_block 使用
+    ts["prev_last_active"] = ts.get("last_active")
     ts["last_active"] = now_str
     save_state(state)
     return state
@@ -390,6 +405,21 @@ def build_prompt_block(state: dict) -> str:
     discrete = state["discrete_emotions"]
     lt = state["long_term"]
     personality = state["personality"]
+    ts = state["timestamps"]
+
+    # 计算距上次对话的时间间隔
+    ref = ts.get("prev_last_active") or ts.get("last_active")
+    time_desc = "刚刚结束了对话"
+    if ref:
+        elapsed_min = _hours_since(ref) * 60
+        if elapsed_min < 1:
+            time_desc = "刚刚结束了对话"
+        elif elapsed_min < 60:
+            time_desc = f"用户离开 {int(elapsed_min)} 分钟"
+        else:
+            hours = int(elapsed_min // 60)
+            mins = int(elapsed_min % 60)
+            time_desc = f"用户离开 {hours} 小时 {mins} 分钟"
 
     # 根据 valence 和 arousal 描述情绪象限
     v, a = current["valence"], current["arousal"]
@@ -416,6 +446,8 @@ def build_prompt_block(state: dict) -> str:
     block = f"""
 
 【涟宗也的内在状态——认知评价系统】
+
+情境：{time_desc}
 
 当前情绪状态（Russell 模型）：
   效价（正负面）：{current['valence']:.2f} / 1.0
